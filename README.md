@@ -2,7 +2,7 @@
 
 ## Overview
 
-Work is a modular Flask-based web application for managing users and events in a school setting. It supports roles such as Admin, Student, Teacher, and Public. The app includes user authentication, event handling, database setup, and logging, with scripts to automate environment and database initialization.
+pslms is a modular Flask-based web application for managing users and events in a school setting. It supports roles such as Admin, Student, Teacher, and Public. The app includes user authentication, event handling, database setup, and logging, with scripts to automate environment and database initialization.
 
 ## Features
 
