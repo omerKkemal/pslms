@@ -342,17 +342,10 @@ SOFTWARE.
 ---
 
 <!-- FOOTER -->
-<p align="center">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=400&size=16&duration=3000&pause=500&color=4CAF50&center=true&vCenter=true&width=400&lines=Primary+School+Learning+Management;Built+with+Flask+and+Python;Open+Source+Education+Project;Empowering+Schools+Digitally" alt="Footer Typing SVG" />
-</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/pslms-Primary%20School%20LMS-4CAF50?style=for-the-badge">
   <img src="https://img.shields.io/badge/Flask-2.0+-000000?style=for-the-badge">
   <br>
   <sub>© 2024 pslms. MIT License.</sub>
-</p>
-
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer&gradient=4CAF50,2196F3,FF9800"/>
 </p>
