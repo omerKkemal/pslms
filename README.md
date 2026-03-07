@@ -3,11 +3,6 @@
   <img src="screen_shot/logo.png" alt="pslms Logo" width="200">
 </p>
 
-<!--- Animated Header --->
-<p align="center">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=32&duration=2000&pause=500&color=4CAF50&center=true&vCenter=true&width=600&lines=pslms;Primary+School+Learning+Management+System;Flask+Web+Application;Modular+School+Management;Admin+%7C+Student+%7C+Teacher+%7C+Public" alt="Typing SVG" />
-</p>
-
 <!-- MAIN TITLE -->
 <p align="center">
   <img src="https://img.shields.io/badge/pslms-PRIMARY%20SCHOOL%20LMS-4CAF50?style=for-the-badge&logo=flask&logoColor=white&labelColor=1a1a2e" alt="pslms">
@@ -43,17 +38,17 @@
 
 <!-- ASCII ART HEADER -->
 <pre align="center">
-╔═══════════════════════════════════════════════════════════════════╗
-║  ██████╗ ███████╗██╗     ███╗   ███╗███████╗                     ║
-║  ██╔══██╗██╔════╝██║     ████╗ ████║██╔════╝                     ║
-║  ██████╔╝███████╗██║     ██╔████╔██║███████╗                     ║
-║  ██╔═══╝ ╚════██║██║     ██║╚██╔╝██║╚════██║                     ║
-║  ██║     ███████║███████╗██║ ╚═╝ ██║███████║                     ║
-║  ╚═╝     ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝                     ║
-║                                                                   ║
-║        Primary School Learning Management System v1.0            ║
-║              Flask-based Modular School Management               ║
-╚═══════════════════════════════════════════════════════════════════╝
+          ╔═══════════════════════════════════════════════════════════════════╗
+          ║  ██████╗ ███████╗██╗     ███╗   ███╗███████╗                      ║
+          ║  ██╔══██╗██╔════╝██║     ████╗ ████║██╔════╝                      ║
+          ║  ██████╔╝███████╗██║     ██╔████╔██║███████╗                      ║
+          ║  ██╔═══╝ ╚════██║██║     ██║╚██╔╝██║╚════██║                      ║
+          ║  ██║     ███████║███████╗██║ ╚═╝ ██║███████║                      ║
+          ║  ╚═╝     ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝                      ║
+          ║                                                                   ║
+          ║        Primary School Learning Management System v1.0             ║
+          ║              Flask-based Modular School Management                ║
+          ╚═══════════════════════════════════════════════════════════════════╝
 </pre>
 
 ---
