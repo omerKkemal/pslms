@@ -1,59 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/w3.css') }}">
-</head>
-<body>
-<section class="w3-card">
-  <div id="loading">
-    <div class="spinner"></div>
+{% extends "base.html" %}
+
+{% block title %}Students in Grade {{ grade }} Section {{ section }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <!-- Back button -->
+  <div class="mb-4">
+    <a onclick="loading_back();" class="inline-flex items-center text-gray-700 hover:text-blue-600">
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+      </svg>
+      Back
+    </a>
   </div>
-  <header id="content1" style="display: none;">
-    <div class="w3-display-container">
-      <a onclick="loading_back();"><img width="15%" class="w3-display-topleft" src="{{ url_for('static', filename='img/back.svg') }}" alt=""></a>
-      <img width="100%" class="round2" src="{{ url_for('static', filename='img/logo.avif') }}">
+
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Students in Grade {{ grade }} Section {{ section }}</h1>
+
+  {% if students | length > 0 %}
+    <div class="space-y-4">
+      {% for student in students | getList %}
+        <div class="bg-white rounded-lg p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 border border-gray-100">
+          <!-- Icon -->
+          <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <!-- Student info -->
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-gray-800">{{ student[1] }} {{ student[2] }} {{ student[3] }}</h3>
+            <p class="text-sm text-gray-500">ID: {{ student[0] }}</p>
+          </div>
+          <!-- Actions -->
+          <div class="flex space-x-2">
+            <a href="/admin/panal/update_options/{{ student[0] }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Update</a>
+            <a onclick="_delete('{{ student[0] }}',9);" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer">Delete</a>
+          </div>
+        </div>
+      {% endfor %}
     </div>
-  </header>
-  <main id="content2" class="main4" style="display: none;">
-    <div class="container" style="margin-top: 50px;">
-        <h4><i>Students in Grade {{grade}} Section {{section}}</i></h4>
-        <table>
-            <thead>
-                <th>
-                    Name
-                </th>
-                <th>
-                    Actions
-                </th>
-            </thead>
-            <tbody>
-                {% for student in students | getList %}
-                <tr>
-                    <td>{{ student[1] }} {{ student[2] }} {{ student[3] }}</td>
-                    <td>
-                      <div class="dropdown" style="margin-right: 20px;">
-                        <a class="btn text" style="background-color: rgb(123, 163, 244);" href="/admin/panal/update_options/{{ student[0] }}">Update</a>
-                      </div>
-                      <a class="btn" style="background-color: rgb(251, 127, 127); text-decoration: none;" onclick="_delete('{{ student[0] }}',9);">&#128465</a>
-                    </td>
-                  </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <a class="btn text" style="background-color: rgb(131, 244, 123);" href="/admin/panal/add_student/{{ grade }}/{{ section }}">+</a>
-    </div>
-  </main>
-</section>
+  {% else %}
+    <p class="text-gray-500 text-center py-8">No students found in this section.</p>
+  {% endif %}
+
+  <!-- Add Student Button -->
+  <div class="mt-6 text-center">
+    <a href="/admin/panal/add_student/{{ grade }}/{{ section }}" class="inline-flex items-center bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      Add Student
+    </a>
+  </div>
 </div>
-<script src=" {{url_for('static',filename='js/action.js')}} "></script>
-<script src=" {{url_for('static',filename='js/api.js')}} "></script>
-</body>
-</html>
+{% endblock %}

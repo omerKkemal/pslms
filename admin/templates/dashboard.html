@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">Dashboard</h1>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <!-- Total Students -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-blue-100 rounded-full">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Total Students</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ total_students }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Teachers -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-green-100 rounded-full">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Total Teachers</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ total_teachers }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Resources -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-yellow-100 rounded-full">
+          <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Total Resources</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ total_resources }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Sections -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-purple-100 rounded-full">
+          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Total Sections</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ total_sections }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Teacher Subjects -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-indigo-100 rounded-full">
+          <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart and Activities Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Pie Chart: Student Gender Distribution -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Students by Gender</h2>
+      <canvas id="genderChart" width="400" height="300"></canvas>
+    </div>
+
+    <!-- Recent Activities Table -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Recent Activities</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left py-2">Action</th>
+              <th class="text-left py-2">User</th>
+              <th class="text-left py-2">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b">
+              <td class="py-2">Added new student</td>
+              <td class="py-2">admin@school.com</td>
+              <td class="py-2">2 mins ago</td>
+            </tr>
+            <tr class="border-b">
+              <td class="py-2">Uploaded resource "Math.pdf"</td>
+              <td class="py-2">john.teacher</td>
+              <td class="py-2">15 mins ago</td>
+            </tr>
+            <tr class="border-b">
+              <td class="py-2">Updated teacher info</td>
+              <td class="py-2">admin@school.com</td>
+              <td class="py-2">1 hour ago</td>
+            </tr>
+            <tr class="border-b">
+              <td class="py-2">Deleted section 5A</td>
+              <td class="py-2">admin@school.com</td>
+              <td class="py-2">3 hours ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Links / Notices Row (optional) -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+      <div class="space-y-3">
+        <a href="/admin/panal/add_students" class="block bg-blue-50 hover:bg-blue-100 p-3 rounded-lg transition">
+          ➕ Add a new student
+        </a>
+        <a href="/admin/panal/add_teacher" class="block bg-green-50 hover:bg-green-100 p-3 rounded-lg transition">
+          👩‍🏫 Add a new teacher
+        </a>
+        <a href="/add_resource" class="block bg-yellow-50 hover:bg-yellow-100 p-3 rounded-lg transition">
+          📤 Upload a resource
+        </a>
+        <a href="/admin/panal/section_info" class="block bg-purple-50 hover:bg-purple-100 p-3 rounded-lg transition">
+          👥 View all students
+        </a>
+      </div>
+    </div>
+
+    <!-- System Notices -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">System Notices</h2>
+      <div class="space-y-2">
+        <div class="bg-red-50 border-l-4 border-red-500 p-3 text-sm">
+          ⚠️ Server backup due tonight at 2 AM.
+        </div>
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 text-sm">
+          📢 New academic year starts next week.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js Script -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('genderChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Male', 'Female'],
+        datasets: [{
+          data: [{{ male_count }}, {{ female_count }}],
+          backgroundColor: ['#3b82f6', '#ec4899'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top' },
+          title: { display: false }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

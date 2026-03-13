@@ -1,58 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/w3.css') }}">
-</head>
-<body>
-<section class="w3-card">
-  <div id="loading">
-    <div class="spinner"></div>
+{% extends "base.html" %}
+
+{% block title %}Admin UI - Update Teacher Options{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+  <!-- Back button -->
+  <div class="relative">
+    <a onclick="loading_back();" class="absolute top-4 left-4 z-10 cursor-pointer">
+      <img src="{{ url_for('static', filename='img/back.svg') }}" alt="Back" class="w-10">
+    </a>
+    <div class="w-full h-40 bg-gray-200"></div>
   </div>
-  <header id="content1" style="display: none;">
-    <div class="w3-display-container">
-      <div class="w3-panel note w3-display-middle round w3-green ss w3-display-container" id="note">
-        <span onclick="this.parentElement.style.display='none'"
-        class="w3-button w3-green w3-large w3-display-topright" style="border-radius: 100%;">&times;</span>
-        <h3 id="title"></h3>
-        <p id="subject">.</p>
-      </div>
-      <a onclick="loading_back();"><img width="15%" class="w3-display-topleft" src="{{ url_for('static', filename='img/back.svg') }}" alt=""></a>
-      <img width="100%" class="round2" src="{{ url_for('static', filename='img/logo.avif') }}">
-    </div>
-  </header>
-  <main id="content2" class="main4" style="display: none;">
-    <h1>Update options</h1>
-    <div class="w3-display-container" style="text-align: initial; padding-left: 15px; padding-right: 15px;">
-      <div class="w3-panel round ss w3-display-container" style="background-color: rgb(106, 219, 98);">
-        <h3>Update!</h3>
-        <p>update {{ teacher[0][1] }} {{ teacher[0][2] }} information <a href="/admin/panal/edit_teacher_info/{{ teacher[0][0] }}" style="background-color: blueviolet;" class="btn text">Update info</a></p>
+
+  <div class="p-6">
+    <h1 class="text-2xl font-bold text-center mb-6">Update options</h1>
+    <div class="space-y-4">
+      <!-- Update Info -->
+      <div class="bg-green-100 rounded-lg p-4">
+        <h3 class="font-bold text-lg">Update!</h3>
+        <p class="mb-2">update {{ teacher[0][1] }} {{ teacher[0][2] }} information</p>
+        <a href="/admin/panal/edit_teacher_info/{{ teacher[0][0] }}" class="inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">Update info</a>
       </div>
 
-      <div class="w3-panel round ss w3-display-container" style="background-color: antiquewhite;">
-        <h3>Add!</h3>
-        <p>Add subject to {{ teacher[0][1] }} {{ teacher[0][2] }} <a href="/admin/panal/add_subject_to_teacher/{{ teacher[0][0] }}" class="btn text" style="background-color: rgb(76, 210, 72);">Add</a></p>
+      <!-- Add Subject -->
+      <div class="bg-orange-100 rounded-lg p-4">
+        <h3 class="font-bold text-lg">Add!</h3>
+        <p class="mb-2">Add subject to {{ teacher[0][1] }} {{ teacher[0][2] }}</p>
+        <a href="/admin/panal/add_subject_to_teacher/{{ teacher[0][0] }}" class="inline-block bg-green-400 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm">Add</a>
       </div>
 
-      <div class="w3-panel round ss w3-display-container" style="background-color: antiquewhite;">
-        <h3>Remove!</h3>
-        <p>Remove  subject from {{ teacher[0][1] }} {{ teacher[0][2] }} <a href="/admin/panal/remove_subject_from_teacher/{{ teacher[0][0] }}" class="btn text" style="background-color: rgb(199, 93, 93);">Remove</a></p>
+      <!-- Remove Subject -->
+      <div class="bg-red-100 rounded-lg p-4">
+        <h3 class="font-bold text-lg">Remove!</h3>
+        <p class="mb-2">Remove subject from {{ teacher[0][1] }} {{ teacher[0][2] }}</p>
+        <a href="/admin/panal/remove_subject_from_teacher/{{ teacher[0][0] }}" class="inline-block bg-red-400 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm">Remove</a>
       </div>
-      <div class="w3-panel round ss w3-display-container" style="background-color: antiquewhite;">
-        <h3>Reset!</h3>
-        <p>Reset {{ teacher[0][1] }} {{ teacher[0][2] }} password <a href="/admin/panal/reset_password/teacher/{{ teacher[0][0] }}" class="btn text" style="background-color: rgb(199, 93, 93);">Resat password</a></p>
+
+      <!-- Reset Password -->
+      <div class="bg-yellow-100 rounded-lg p-4">
+        <h3 class="font-bold text-lg">Reset!</h3>
+        <p class="mb-2">Reset {{ teacher[0][1] }} {{ teacher[0][2] }} password</p>
+        <a href="/admin/panal/reset_password/teacher/{{ teacher[0][0] }}" class="inline-block bg-red-400 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm">Reset password</a>
       </div>
     </div>
-  </main>
-</section>
-<script src=" {{url_for('static',filename='js/action.js')}} "></script>
-<script src=" {{url_for('static',filename='js/api.js')}} "></script>
-</body>
-</html>
+  </div>
+</div>
+{% endblock %}

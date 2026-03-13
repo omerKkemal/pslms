@@ -10,6 +10,7 @@
 
 from flask import request, render_template, Blueprint, url_for, redirect, session
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func
 import os
 
 from utility._templates_filters import getlist
@@ -29,12 +30,64 @@ _session = Session()
 
 Admin.add_app_template_filter(getlist, 'getList')
 
+@Admin.route('/admin/Dashboard')
+def dashboard():
+    total_students = _session.query(Student).count()
+    total_teachers = _session.query(Teacher).count()
+    total_sections = _session.query(Sections).count()
+    total_resources = _session.query(Resource).count()
+
+    # Data for pie chart: count students by gender
+    male_count = _session.query(Student).filter(Student.gender == 'Male').count()
+    female_count = _session.query(Student).filter(Student.gender == 'Female').count()
+
+    return render_template(
+        'dashboard.html',
+        total_students=total_students,
+        total_teachers=total_teachers,
+        total_sections=total_sections,
+        total_resources=total_resources,
+        male_count=male_count,
+        female_count=female_count,
+        active_page='dashboard'
+    )
+
+#Similarly for other routes: 'admin_panal', 'add_students', 'add_teacher', 'resource_option', 'section_info', 'get_teachers'.
+
 # student info (done!!!!)
 @Admin.route('/admin/panal', methods=['GET'])
 def admin():
     if "username" in session:
         if session["role"] == "admin":
-            return render_template('admin_panal.html')
+            # Get distinct grades from Sections
+            grades = _session.query(Sections.grade).distinct().all()
+            grades = [g[0] for g in grades]  # extract integer values
+
+            # Get distinct section names
+            sections = _session.query(Sections.section).distinct().all()
+            sections = [s[0] for s in sections]
+
+            # Get full section list (id, grade, section) for resource dropdown
+            sections_list = _session.query(Sections.ID, Sections.grade, Sections.section).all()
+
+            # Gender mapping (adjust to match your stored values)
+            # In your models, gender is String(2). Common values: 'M'/'F' or 'Male'/'Female'.
+            # We'll use 'M' for male and 'F' for female as an example.
+            gender = {'male': 'M', 'female': 'F'}
+
+            # Get distinct resource types from the Resource table
+            resource = _session.query(Resource.resource_type).distinct().all()
+            resource = [r[0] for r in resource]  # list of type strings
+
+            return render_template(
+                'admin_panal.html',
+                active_page='admin_panal',
+                grades=grades,
+                sections=sections,
+                sections_list=sections_list,
+                gender=gender,
+                resource=resource
+            )
         else:
             return redirect(url_for('event.unautrized'))
     else:
@@ -86,10 +139,7 @@ def add_students():
                         var.log(f"Error occurred: {e}")
                         return redirect(url_for('event.internal_server_error'))
                 else:
-                    return render_template(
-                        'add_students.html',
-                        sections=sections, gender=gender,grades=grades
-                    )
+                    return 'unvalid request method'
             else:
                 return redirect(url_for('event.unautrized'))
         else:
@@ -156,7 +206,7 @@ def info():
             if session['role'] == 'admin':
                 sections = _session.query(Sections).all()
                 print(sections)
-                return render_template('info_section.html', sections=sections)
+                return render_template('info_section.html', sections=sections,active_page='section_info')
             else:
                 return redirect(url_for('event.unautrized'))
         else:
@@ -314,11 +364,7 @@ def add_teacher():
                         _session.rollback()
                         return redirect(url_for('event.internal_server_error'))
                 elif request.method == "GET":
-                    data, _data = read_from_json()
-                    gender = data.Permanent.Gender
-                    return render_template(
-                        'add_techer.html',gender=gender
-                    )
+                    return 'unvalid request method'
             else:
                 return redirect('event.unauthorized')
         else:
@@ -335,7 +381,8 @@ def get_teacher():
         if "username" in session:
             if session["role"] == "admin":
                 teachers = _session.query(Teacher).all()
-                return render_template("get_teacher.html", teachers=teachers)
+                gender = {'male': 'M', 'female': 'F'}
+                return render_template("get_teacher.html", teachers=teachers,active_page='get_teachers',gender=gender)
             else:
                 return redirect(url_for('event.unauthorized'))
         else:
@@ -506,17 +553,6 @@ def edit_teacher_basic_info(ID=None):
             return redirect(url_for('event.unauthorized'))
     else:
         return redirect(url_for('Login.login'))
-
-
-# resource
-
-@Admin.route('/resource_option')
-def resource_option():
-    if 'username' in session:
-        if session['role'] == "admin":
-            return render_template('resource_option.html')
-    else:
-        ...
 
 
 @Admin.route("/add_resource",methods=['POST','GET'])

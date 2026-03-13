@@ -1,53 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/w3.css') }}">
-</head>
-<body>
-<section class="w3-card">
-  <div id="loading">
-    <div class="spinner"></div>
+{% extends "base.html" %}
+
+{% block title %}Admin UI - Remove Subject{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+  <!-- Back button -->
+  <div class="relative">
+    <a onclick="loading_back();" class="absolute top-4 left-4 z-10 cursor-pointer">
+      <img src="{{ url_for('static', filename='img/back.svg') }}" alt="Back" class="w-10">
+    </a>
+    <div class="w-full h-40 bg-gray-200"></div>
   </div>
-  <header id="content1" style="display: none;">
-    <div class="w3-display-container">
-      <div class="w3-panel note w3-display-middle round w3-green ss w3-display-container" id="note">
-        <span onclick="this.parentElement.style.display='none'"
-        class="w3-button w3-green w3-large w3-display-topright" style="border-radius: 100%;">&times;</span>
-        <h3 id="title"></h3>
-        <p id="subject">.</p>
-      </div>
-      <a onclick="loading_back();"><img width="15%" class="w3-display-topleft" src="{{ url_for('static', filename='img/back.svg') }}" alt=""></a>
-      <img width="100%" class="round2" src="{{ url_for('static', filename='img/logo.avif') }}">
-    </div>
-  </header>
-  <main id="content2" class="main4" style="display: none;">
-    <form style="display: block;" action="/admin/panal/remove_subject_from_teacher/{{ ID }}" onsubmit="loading_animation();" method="post">
-        {% for key,value in by_section.items() %}
-          <h3>{{ key }}</h3>
+
+  <div class="p-6">
+    <form action="/admin/panal/remove_subject_from_teacher/{{ ID }}" onsubmit="loading_animation();" method="post" class="space-y-6">
+      {% for key,value in by_section.items() %}
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-xl font-semibold mb-3">{{ key }}</h3>
+          <div class="space-y-3">
             {% for i,val in enumerate(value) %}
-              <div class="action">
-                <p style="padding-right: 10px;">{{val[1]}} : {{val[2]}}</p>
-                <select name="{{ val[0] }}" class="btn">
-                {% for acc in access %}
-                  <option value="{{ val[0] }}-{{ acc }}">{{ acc }}</option>
-                {% endfor %}
+              <div class="flex items-center space-x-3">
+                <p class="flex-1">{{ val[1] }} : {{ val[2] }}</p>
+                <select name="{{ val[0] }}" class="px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                  {% for acc in access %}
+                    <option value="{{ val[0] }}-{{ acc }}">{{ acc }}</option>
+                  {% endfor %}
                 </select>
               </div>
             {% endfor %}
-        {% endfor %}
-        <input class="btn" style="background-color: rgb(195, 231, 94); margin-top: 30px;" type="submit" value="Save">
+          </div>
+        </div>
+      {% endfor %}
+      <div class="text-center">
+        <input type="submit" value="Save" class="bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition duration-200">
+      </div>
     </form>
-  </main>
-</section>
+  </div>
 </div>
-<script src=" {{url_for('static',filename='js/action.js')}} "></script>
-<script src=" {{url_for('static',filename='js/api.js')}} "></script>
-</body>
+{% endblock %}

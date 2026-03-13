@@ -1,64 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/w3.css') }}">
-</head>
-<body>
-<section class="w3-card">
-  <div id="loading">
-    <div class="spinner"></div>
+{% extends "base.html" %}
+
+{% block title %}Admin UI - Update Basic Info{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden relative">
+  <!-- Back button -->
+  <div class="relative">
+    <a onclick="loading_back();" class="absolute top-4 left-4 z-10 cursor-pointer">
+      <img src="{{ url_for('static', filename='img/back.svg') }}" alt="Back" class="w-10">
+    </a>
+    <div class="w-full h-40 bg-gray-200 rounded-t-2xl"></div>
   </div>
-  <header id="content1" style="display: none;">
-    <div class="w3-display-container">
-      <a href="/logout" onclick="loading_animation();"><img width="15%" class="w3-display-topleft" src="{{ url_for('static', filename='img/back.svg') }}" alt=""></a>
-      <img width="100%" class="round2" src="{{ url_for('static', filename='img/logo.avif') }}"><a onclick="loading_back();"><img width="15%" class="w3-display-topleft" src="{{ url_for('static', filename='img/back.svg') }}" alt=""></a>
-    </div>
-  </header>
-  <main id="content2" class="main4" style="display: none;">
-    <h1>Update Student's Basic info</h1>
-    <form action="/admin/panal/update_student_Basic/{{ student[0][0] }}" method="post">
-        <div class="input-data">
-          <input name="fname" type="text" value="{{ student[0][1] }}" style="margin-top: 0px;" placeholder="First Name" required>
-        </div>
-        <div class="input-data">
-          <input name="mname" type="text" value="{{ student[0][2] }}" placeholder="Middle Name" required>
-        </div>
-        <div class="input-data">
-          <input name="lname" type="text" value="{{ student[0][3] }}" placeholder="Last Name" required>
-        </div>
-        <div style="border: 30px;" class="list">
-            <select class="item" name="gender" required>
-                <option value="{{ student[0][4] }}">Gender</option>
-                <option value="{{ gender['male'] }}">Male</option>
-                <option value="{{ gender['female'] }}">Female</option>
-            </select>
-            <select class="item" name="gender" required>
-              <option value="{{ student[0][5] }}">Grade</option>
-              {% for grade in grades %}
-                <option value="{{ grade }}">{{ grade }}</option>
-              {% endfor %}
-          </select>
-          <select class="item" name="gender" required>
-            <option value="{{ student[0][6] }}">Section</option>
-            {% for section in sections %}
-              <option value="{{ section }}">{{ section }}</option>
-            {% endfor %}
+
+  <div class="p-6">
+    <h1 class="text-2xl font-bold text-center mb-6">Update Student's Basic Info</h1>
+    <form action="/admin/panal/update_student_Basic/{{ student[0][0] }}" method="post" class="space-y-4">
+      <div>
+        <input name="fname" type="text" value="{{ student[0][1] }}" placeholder="First Name" required
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+      </div>
+      <div>
+        <input name="mname" type="text" value="{{ student[0][2] }}" placeholder="Middle Name" required
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+      </div>
+      <div>
+        <input name="lname" type="text" value="{{ student[0][3] }}" placeholder="Last Name" required
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+      </div>
+      <div class="space-y-3">
+        <select name="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+          <option value="{{ student[0][4] }}">Gender</option>
+          <option value="{{ gender['male'] }}">Male</option>
+          <option value="{{ gender['female'] }}">Female</option>
         </select>
-        </div>
-        <input class="btn" onclick="loading_animation();" style="background-color: rgb(195, 231, 94); margin-top: 30px;" type="submit" value="Add">
+        <select name="grade" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+          <option value="{{ student[0][5] }}">Grade</option>
+          {% for grade in grades %}
+            <option value="{{ grade }}">{{ grade }}</option>
+          {% endfor %}
+        </select>
+        <select name="section" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+          <option value="{{ student[0][6] }}">Section</option>
+          {% for section in sections %}
+            <option value="{{ section }}">{{ section }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="text-center">
+        <input type="submit" value="Update" onclick="loading_animation();"
+               class="bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition duration-200">
+      </div>
     </form>
-  </main>
-</section>
+  </div>
 </div>
-<script src=" {{url_for('static',filename='js/action.js')}} "></script>
-<script src=" {{url_for('static',filename='js/api.js')}} "></script>
-</body>
-</html>
+{% endblock %}

@@ -1,72 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/w3.css') }}">
-</head>
-<body>
-<section class="w3-card">
-  <div id="loading">
-    <div class="spinner"></div>
+{% extends "base.html" %}
+
+{% block title %}Admin UI - Upload Resource{% endblock %}
+
+{% block head %}
+<style>
+  /* Additional styles for drag & drop */
+  #drop-area.border-green-400 {
+    border-color: #48bb78;
+    background-color: #f0fff4;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+  <!-- Back button -->
+  <div class="relative">
+    <a onclick="loading_back();" class="absolute top-4 left-4 z-10 cursor-pointer">
+      <img src="{{ url_for('static', filename='img/back.svg') }}" alt="Back" class="w-10">
+    </a>
+    <div class="w-full h-40 bg-gray-200"></div>
   </div>
-  <header id="content1" style="display: none;">
-    <div class="w3-display-container">
-      <a onclick="loading_back();"><img width="15%" class="w3-display-topleft" src="{{ url_for('static', filename='img/back.svg') }}" alt=""></a>
-      <img width="100%" class="round2" src="{{ url_for('static', filename='img/logo.avif') }}">
-    </div>
-  </header>
-  <main id="content2" class="main4" style="display: none;">
-<div class="w3-container">
-    <div>
-        <div class="card-header bg-secondary text-white">
-            Resource Upload Form
-        </div>
-        <div class="form-container">
-          <form action="/admin/panal/add_resource" method="POST" enctype="multipart/form-data">
-              <label for="resource">Resource File</label>
-              <label for="file-input">
-                <div class="upload-box" id="drop-area">
-                    <img src=" {{url_for('static',filename='img/upload_icon.png') }}" alt="Upload Icon">
-                    <p>Drag & Drop files here</p>
-                    <p>or</p>
-                    <span class="browse-btn">Browse Files</span>
-                </div>
-            </label>
-            <input type="file" id="file-input" name="files" required multiple>
-            <div id="file-name" class="file-name">No file selected</div>
-  
-              <label for="description">Description</label>
-              <textarea class="mm" id="description" name="description" rows="3" required></textarea>
-              <br>
-            <div style="border: 30px;" class="list">
-              <select class="mm item" name="resource_type" id="resource_type">
-                  {% for x in resource %}
-                  <option value="{{ x }}">{{ x }}</option>
-                  {% endfor %}
-              </select>
-  
-              
-              <select class="mm item" name="section" id="section">
-                  {% for x in sections %}
-                  <option value="{{ x[0] }}">{{ x[1] }} {{ x[2] }}</option>
-                  {% endfor %}
-              </select>
+
+  <div class="p-6">
+    <div class="space-y-6">
+      <div class="bg-gray-100 rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-4">Resource Upload Form</h2>
+        <form action="/admin/panal/add_resource" method="POST" enctype="multipart/form-data" class="space-y-4">
+          <!-- File Upload Area -->
+          <div>
+            <label for="resource" class="block text-sm font-medium text-gray-700 mb-2">Resource File</label>
+            <div id="drop-area" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-400 transition">
+              <img src="{{ url_for('static', filename='img/upload_icon.png') }}" alt="Upload Icon" class="w-16 mx-auto mb-2">
+              <p class="text-gray-600">Drag & Drop files here</p>
+              <p class="text-gray-500">or</p>
+              <span class="inline-block bg-green-500 text-white px-4 py-2 rounded-lg mt-2">Browse Files</span>
             </div>
-              <br><button type="submit" class="btn">Upload</button>
-          </form>
+            <input type="file" id="file-input" name="files" required multiple class="hidden">
+            <div id="file-name" class="mt-2 text-sm text-gray-600">No file selected</div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea id="description" name="description" rows="3" required
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
+          </div>
+
+          <!-- Selects -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <select name="resource_type" id="resource_type" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+              {% for x in resource %}
+                <option value="{{ x }}">{{ x }}</option>
+              {% endfor %}
+            </select>
+
+            <select name="section" id="section" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+              {% for x in sections %}
+                <option value="{{ x[0] }}">{{ x[1] }} {{ x[2] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="text-center">
+            <button type="submit" class="bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg transition">Upload</button>
+          </div>
+        </form>
       </div>
     </div>
+  </div>
 </div>
-</main>
-</section>
-</div>
+
+<!-- JavaScript for drag & drop (same as original) -->
 <script>
   const dropArea = document.getElementById("drop-area");
   const fileInput = document.getElementById("file-input");
@@ -74,16 +80,16 @@
 
   dropArea.addEventListener("dragover", (event) => {
       event.preventDefault();
-      dropArea.classList.add("dragover");
+      dropArea.classList.add("border-green-400", "bg-green-50");
   });
 
   dropArea.addEventListener("dragleave", () => {
-      dropArea.classList.remove("dragover");
+      dropArea.classList.remove("border-green-400", "bg-green-50");
   });
 
   dropArea.addEventListener("drop", (event) => {
       event.preventDefault();
-      dropArea.classList.remove("dragover");
+      dropArea.classList.remove("border-green-400", "bg-green-50");
 
       if (event.dataTransfer.files.length > 0) {
           fileInput.files = event.dataTransfer.files;
@@ -100,8 +106,8 @@
           fileNameDisplay.textContent = "No file selected";
       }
   }
+
+  // Trigger file input when drop area is clicked
+  dropArea.addEventListener("click", () => fileInput.click());
 </script>
-<script src=" {{url_for('static',filename='js/action.js')}} "></script>
-<script src=" {{url_for('static',filename='js/api.js')}} "></script>
-</body>
-</html>
+{% endblock %}

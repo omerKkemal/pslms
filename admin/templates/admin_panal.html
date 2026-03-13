@@ -1,81 +1,227 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/w3.css') }}">
-</head>
-<body>
-<section class="w3-card">
-  <div id="loading">
-    <div class="spinner"></div>
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block head %}
+<!-- Heroicons v2 CDN -->
+<script src="https://unpkg.com/heroicons@2.0.18/outline/index.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold text-gray-800 mb-8">Admin Panel</h1>
+
+  <!-- Button Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <!-- Add Student - opens modal -->
+    <button onclick="openModal('studentModal')" class="bg-white shadow-sm rounded-xl p-4 text-center hover:bg-gray-50 hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col items-center">
+      <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      </div>
+      <span class="text-lg font-semibold text-gray-800">Add Student</span>
+    </button>
+
+    <!-- Add Teacher - opens modal -->
+    <button onclick="openModal('teacherModal')" class="bg-white shadow-sm rounded-xl p-4 text-center hover:bg-gray-50 hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col items-center">
+      <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+      <span class="text-lg font-semibold text-gray-800">Add Teacher</span>
+    </button>
+
+    <!-- Add Resource - opens modal -->
+    <button onclick="openModal('resourceModal')" class="bg-white shadow-sm rounded-xl p-4 text-center hover:bg-gray-50 hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col items-center">
+      <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+      </div>
+      <span class="text-lg font-semibold text-gray-800">Add Resource</span>
+    </button>
+
+    <!-- View Students - link to page -->
+    <a href="/admin/panal/section_info" class="bg-white shadow-sm rounded-xl p-4 text-center hover:bg-gray-50 hover:shadow-md transition border border-gray-100 block flex flex-col items-center">
+      <div class="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      </div>
+      <span class="text-lg font-semibold text-gray-800">View Students</span>
+    </a>
+
+    <!-- View Teachers - link to page -->
+    <a href="/admin/panal/get_teachers" class="bg-white shadow-sm rounded-xl p-4 text-center hover:bg-gray-50 hover:shadow-md transition border border-gray-100 block flex flex-col items-center">
+      <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      </div>
+      <span class="text-lg font-semibold text-gray-800">View Teachers</span>
+    </a>
+
+    <!-- View Resources - link to page -->
+    <a href="/view_resource" class="bg-white shadow-sm rounded-xl p-4 text-center hover:bg-gray-50 hover:shadow-md transition border border-gray-100 block flex flex-col items-center">
+      <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      </div>
+      <span class="text-lg font-semibold text-gray-800">View Resources</span>
+    </a>
   </div>
-  <header id="content1" style="display: none;">
-    <div class="w3-display-container">
-      <a href="/logout" onclick="loading_animation();"><img width="15%" class="w3-display-topright logout" src="{{ url_for('static', filename='img/logout.svg') }}" alt=""></a>
-      <img width="100%" class="round2" src="{{ url_for('static', filename='img/logo.avif') }}">
+
+  <!-- Alerts Section -->
+  <div class="space-y-4">
+    <h2 class="text-2xl font-bold text-gray-800">Attention Required</h2>
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-lg relative">
+      <span onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-2xl cursor-pointer">&times;</span>
+      <h3 class="font-bold text-lg">Danger!</h3>
+      <p>Red often indicates a dangerous or negative situation.</p>
     </div>
-  </header>
-  <main id="content2" class="main1" style="display: none;">
-    <h1>Admin Panel</h1>
-    <div class="Buttons">
-      <div class="Button ss">
-        <a class="text" onclick="loading_animation();" href="/admin/panal/add_students">
-          <img width="70%%" src="{{ url_for('static',filename='img/add_student.webp') }}" alt="">
-          Add Student</a>
-      </div>
-      <div class="Button ss">
-        <a class="text" href="/admin/panal/add_teacher">
-          <img width="70%" src="{{ url_for('static',filename='img/add_teacher.png') }}" alt="">
-          Add Teacher
-        </a>
-      </div>
-      <div class="Button ss">
-        <a class="text" href="/resource_option">
-          <img width="70%" src="{{ url_for('static',filename='img/resources.png') }}" alt="">
-          Resources</a>
-      </div>
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-lg relative">
+      <span onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-2xl cursor-pointer">&times;</span>
+      <h3 class="font-bold text-lg">Danger!</h3>
+      <p>Red often indicates a dangerous or negative situation.</p>
     </div>
-    <div class="Buttons">
-      <div class="Button ss">
-        <a class="text" href="/admin/panal/section_info">
-          <img width="70%" src="{{ url_for('static',filename='img/add_student.webp') }}" alt="">
-          View Student</a>
-      </div>
-      <div class="Button ss">
-        <a class="text" href="/admin/panal/get_teachers">
-          <img width="70%" src="{{ url_for('static',filename='img/add_teacher.png') }}" alt="">
-          View Teacher</a>
-      </div>
-      <div class="Button ss">
-        <a class="text" href="#">
-          <img width="70%" src="{{ url_for('static',filename='img/resources.png') }}" alt="">
-          View Subject</a>
-      </div>
-    </div>
-    <div class="alerts">
-      <h2>Attention Require</h2>
-      <div class="w3-panel round w3-yellow ss w3-display-container">
-        <span onclick="this.parentElement.style.display='none'"
-        class="w3-button round w3-yellow w3-large w3-display-topright">&times;</span>
-        <h3>Danger!</h3>
-        <p>Red often indicates a dangerous or negative situation.</p>
-      </div>
-      <div class="w3-panel round w3-yellow ss w3-display-container">
-        <span onclick="this.parentElement.style.display='none'"
-        class="w3-button round w3-yellow w3-large w3-display-topright">&times;</span>
-        <h3>Danger!</h3>
-        <p>Red often indicates a dangerous or negative situation.</p>
-      </div>
-    </div>
-  </main>
-</section>
+  </div>
 </div>
-<script src=" {{url_for('static',filename='js/action.js')}} "></script>
-</body>
-</html>
+
+<!-- Add Student Modal -->
+<div id="studentModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center p-6 border-b">
+      <h2 class="text-xl font-bold">Add Student</h2>
+      <button onclick="closeModal('studentModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    <div class="p-6">
+      <form action="/admin/panal/add_students" method="post" onsubmit="loading_animation();">
+        <div class="space-y-4">
+          <input name="fname" type="text" placeholder="First Name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input name="mname" type="text" placeholder="Middle Name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input name="lname" type="text" placeholder="Last Name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select name="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Gender</option>
+            <option value="{{ gender['male'] }}">Male</option>
+            <option value="{{ gender['female'] }}">Female</option>
+          </select>
+          <select name="grade" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Grade</option>
+            {% for grade in grades %}
+              <option value="{{ grade }}">{{ grade }}</option>
+            {% endfor %}
+          </select>
+          <select name="section" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Section</option>
+            {% for section in sections %}
+              <option value="{{ section }}">{{ section }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button type="button" onclick="closeModal('studentModal')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+          <input type="submit" value="Add Student" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer">
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Teacher Modal -->
+<div id="teacherModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+    <div class="flex justify-between items-center p-6 border-b">
+      <h2 class="text-xl font-bold">Add Teacher</h2>
+      <button onclick="closeModal('teacherModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    <div class="p-6">
+      <form action="/admin/panal/add_teacher" method="post" onsubmit="loading_animation();">
+        <div class="space-y-4">
+          <input name="fname" type="text" placeholder="First Name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input name="mname" type="text" placeholder="Middle Name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input name="lname" type="text" placeholder="Last Name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select name="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Gender</option>
+            <option value="{{ gender['male'] }}">Male</option>
+            <option value="{{ gender['female'] }}">Female</option>
+          </select>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button type="button" onclick="closeModal('teacherModal')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+          <input type="submit" value="Add Teacher" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer">
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Resource Modal -->
+<div id="resourceModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center p-6 border-b">
+      <h2 class="text-xl font-bold">Add Resource</h2>
+      <button onclick="closeModal('resourceModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    <div class="p-6">
+      <form action="/admin/panal/add_resource" method="POST" enctype="multipart/form-data" onsubmit="loading_animation();">
+        <div class="space-y-4">
+          <!-- File input -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Resource File</label>
+            <input type="file" name="files" required multiple
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <!-- Description -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea name="description" rows="3" required
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          <!-- Resource type -->
+          <select name="resource_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Resource Type</option>
+            {% for type in resource %}
+              <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+          </select>
+          <!-- Section -->
+          <select name="section" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Section</option>
+            {% for sec in sections_list %}
+              <option value="{{ sec[0] }}">{{ sec[1] }} {{ sec[2] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button type="button" onclick="closeModal('resourceModal')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+          <input type="submit" value="Upload Resource" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer">
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for modals -->
+<script>
+  function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+  }
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+  }
+  window.addEventListener('click', function(event) {
+    if (event.target.classList.contains('bg-gray-900')) {
+      event.target.classList.add('hidden');
+    }
+  });
+</script>
+{% endblock %}

@@ -72,3 +72,25 @@ The browser instead transmitted some file names. This was submitted: 'script.js'
 [  2025-02-16 09:09:16.099972  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
 [  2025-02-19 16:13:04.786770  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
 [  2025-02-24 05:58:21.112350  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 10:20:25.068856  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 10:35:06.531179  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 10:59:10.613886  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 12:07:19.329841  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 12:11:25.631147  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 12:18:32.625947  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 12:25:53.079819  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 13:29:14.008406  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 13:30:30.024756  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 13:34:27.282976  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 13:48:32.442205  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 13:57:17.179187  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 14:22:50.031458  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 14:35:23.314570  ] : Error occurred: 'gender' is undefined
+[  2026-03-13 14:35:23.374522  ] : internal_server_error --> (500) By:ID=oixeD name=admin
+[  2026-03-13 14:36:11.566163  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 14:36:19.910506  ] : Error occurred: 'gender' is undefined
+[  2026-03-13 14:36:19.994101  ] : internal_server_error --> (500) By:ID=oixeD name=admin
+[  2026-03-13 14:38:49.729053  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-03-13 14:42:21.052226  ] : Error occurred: add_student.html
+[  2026-03-13 14:42:21.105029  ] : internal_server_error --> (500) By:ID=oixeD name=admin
+[  2026-03-13 14:54:20.992156  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
