@@ -1,10 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>403 - Unauthorized | Nur Al-Huda</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter as primary -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
 </head>
-<body>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+  <!-- Minimal Navbar -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-2xl font-bold text-blue-600">Nur Al-Huda</span>
+        </div>
+        <div>
+          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
+        </div>
+      </div>
+    </div>
+  </nav>
 
+  <!-- Main Content -->
+  <main class="flex-grow container mx-auto px-4 py-16 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <!-- Header with icon -->
+      <div class="bg-gradient-to-r from-red-500 to-red-600 p-6 text-center">
+        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+          <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-white">Access Denied</h2>
+      </div>
+
+      <!-- Message -->
+      <div class="p-8 text-center">
+        <p class="text-lg text-gray-700 mb-6">You don't have permission to access this page.</p>
+        <p class="text-md text-gray-500 mb-8">If you believe this is an error, please contact your administrator.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-3">
+          <button onclick="goBack()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition">
+            Go Back
+          </button>
+          <a href="/" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition">
+            Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto px-4 text-center">
+      <p class="text-gray-300 text-sm">&copy; 2026 Nur Al-Huda. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript for goBack function (from action.js) -->
+  <script src="{{ url_for('static', filename='js/action.js') }}"></script>
 </body>
 </html>

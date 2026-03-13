@@ -7,7 +7,7 @@
 <body>
 <p>{{ message }}</p>
 <script src="{{ url_for('static', filename='js/action.js') }}">
-    info();
+    info('{{ message }}');
 </script>
 </body>
 </html>

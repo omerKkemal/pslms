@@ -1,4 +1,4 @@
-// action.js - Enhanced version
+// action.js - Enhanced version with full functionality
 
 // DOM elements
 const loading = document.getElementById("loading");
@@ -74,9 +74,19 @@ function showNotification(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-// Legacy notification function (kept for backward compatibility)
-function notifcation(subject, stute) {
-    showNotification(subject, stute === 'error' ? 'error' : 'success');
+/**
+ * Legacy notification function (shows alert and redirects)
+ * Used by message.html
+ */
+function info(message) {
+    alert(message);
+    loading_animation();
+    // Use goBack() logic to return to previous page
+    if (document.referrer) {
+        window.location.href = document.referrer;
+    } else {
+        window.history.back();
+    }
 }
 
 /**
@@ -100,12 +110,17 @@ window.addEventListener('click', function(event) {
     }
 });
 
-// Optional: Add a utility function for AJAX delete operations (if used)
+/**
+ * Delete function for students/teachers (used in list views)
+ * @param {string} id - The ID of the item to delete
+ * @param {number} type - The type of item (9=student, 10=teacher, etc.)
+ */
 function _delete(id, type) {
     if (confirm('Are you sure you want to delete this item?')) {
         // Implement your delete logic here
         console.log('Delete', id, type);
-        // Example: fetch(`/delete/${type}/${id}`, { method: 'POST' })
+        // Example AJAX call:
+        // fetch(`/delete/${type}/${id}`, { method: 'POST' })
         //     .then(response => response.json())
         //     .then(data => {
         //         if (data.success) showNotification('Deleted successfully', 'success');
@@ -114,7 +129,9 @@ function _delete(id, type) {
     }
 }
 
-// For flaskApi_Delete (used in view_resources.html)
+/**
+ * Alias for _delete (used in view_resources.html)
+ */
 function flaskApi_Delete(id, type) {
     _delete(id, type);
 }

@@ -32,25 +32,31 @@ Admin.add_app_template_filter(getlist, 'getList')
 
 @Admin.route('/admin/Dashboard')
 def dashboard():
-    total_students = _session.query(Student).count()
-    total_teachers = _session.query(Teacher).count()
-    total_sections = _session.query(Sections).count()
-    total_resources = _session.query(Resource).count()
+    if "username" in session:
+        if session["role"] != "admin":
+            return redirect(url_for('event.unautrized'))
+        
+        total_students = _session.query(Student).count()
+        total_teachers = _session.query(Teacher).count()
+        total_sections = _session.query(Sections).count()
+        total_resources = _session.query(Resource).count()
 
-    # Data for pie chart: count students by gender
-    male_count = _session.query(Student).filter(Student.gender == 'Male').count()
-    female_count = _session.query(Student).filter(Student.gender == 'Female').count()
+        # Data for pie chart: count students by gender
+        male_count = _session.query(Student).filter(Student.gender == 'Male').count()
+        female_count = _session.query(Student).filter(Student.gender == 'Female').count()
 
-    return render_template(
-        'dashboard.html',
-        total_students=total_students,
-        total_teachers=total_teachers,
-        total_sections=total_sections,
-        total_resources=total_resources,
-        male_count=male_count,
-        female_count=female_count,
-        active_page='dashboard'
-    )
+        return render_template(
+            'dashboard.html',
+            total_students=total_students,
+            total_teachers=total_teachers,
+            total_sections=total_sections,
+            total_resources=total_resources,
+            male_count=male_count,
+            female_count=female_count,
+            active_page='dashboard'
+        )
+    else:
+        return redirect(url_for('Login.login'))
 
 #Similarly for other routes: 'admin_panal', 'add_students', 'add_teacher', 'resource_option', 'section_info', 'get_teachers'.
 

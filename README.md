@@ -58,6 +58,7 @@
 <p align="center">
   <a href="#overview"><img src="https://img.shields.io/badge/Overview-4CAF50?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#features"><img src="https://img.shields.io/badge/Features-2196F3?style=for-the-badge&logo=readme&logoColor=white"></a>
+  <a href="#screenshots"><img src="https://img.shields.io/badge/Screenshots-FF5722?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#installation"><img src="https://img.shields.io/badge/Installation-FF9800?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#directory-structure"><img src="https://img.shields.io/badge/Directory%20Structure-9C27B0?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#usage"><img src="https://img.shields.io/badge/Usage-607D8B?style=for-the-badge&logo=readme&logoColor=white"></a>
@@ -97,6 +98,18 @@ The system is designed to be scalable, maintainable, and easy to deploy, making 
 | **Logging System** | Automatic log directory creation for organized data management |
 | **Excel Integration** | Excel directory creation for data export and reporting |
 | **User Authentication** | Secure login/logout functionality for all user roles |
+
+---
+
+## SCREENSHOTS
+
+Here are some screenshots of the pslms application in action:
+
+| Home Page | Login Page | Admin Panel | Dashboard |
+|:---------:|:----------:|:-----------:|:---------:|
+| ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) | ![Admin Panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
+
+*Note: Screenshots showcase the user interface of the main modules.*
 
 ---
 
@@ -156,7 +169,7 @@ This script will:
 ## DIRECTORY STRUCTURE
 
 ```
-Work/
+pslms/
 │
 ├── 📄 app.py                          # Main Flask application entry point
 ├── 📄 init.py                          # Python initialization script
