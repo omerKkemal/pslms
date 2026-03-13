@@ -38,22 +38,22 @@
 
 <!-- ASCII ART HEADER -->
 <pre align="center">
-              ╔═══════════════════════════════════════════════════════╗
-              ║  ██████╗ ███████╗██╗     ███╗   ███╗███████╗          ║
-              ║  ██╔══██╗██╔════╝██║     ████╗ ████║██╔════╝          ║
-              ║  ██████╔╝███████╗██║     ██╔████╔██║███████╗          ║
-              ║  ██╔═══╝ ╚════██║██║     ██║╚██╔╝██║╚════██║          ║
-              ║  ██║     ███████║███████╗██║ ╚═╝ ██║███████║          ║
-              ║  ╚═╝     ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝          ║
-              ║                                                       ║
-              ║        Primary School Learning Management System v1.0 ║
-              ║              Flask-based Modular School Management    ║
-              ╚═══════════════════════════════════════════════════════╝
+              ╔════════════════════════════════════════════════╗
+              ║  ██████╗ ███████╗██╗     ███╗   ███╗███████╗   ║
+              ║  ██╔══██╗██╔════╝██║     ████╗ ████║██╔════╝   ║
+              ║  ██████╔╝███████╗██║     ██╔████╔██║███████╗   ║
+              ║  ██╔═══╝ ╚════██║██║     ██║╚██╔╝██║╚════██║   ║
+              ║  ██║     ███████║███████╗██║ ╚═╝ ██║███████║   ║
+              ║  ╚═╝     ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝   ║
+              ║                                                ║
+              ║ Primary School Learning Management System v1.0 ║
+              ║   Flask-based Modular School Management        ║
+              ╚════════════════════════════════════════════════╝
 </pre>
 
 ---
 
-## 📋 NAVIGATION MENU
+## NAVIGATION MENU
 
 <p align="center">
   <a href="#overview"><img src="https://img.shields.io/badge/Overview-4CAF50?style=for-the-badge&logo=readme&logoColor=white"></a>
@@ -103,13 +103,33 @@ The system is designed to be scalable, maintainable, and easy to deploy, making 
 
 ## SCREENSHOTS
 
-Here are some screenshots of the pslms application in action:
-
-| Home Page | Login Page | Admin Panel | Dashboard |
-|:---------:|:----------:|:-----------:|:---------:|
-| ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) | ![Admin Panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
-
-*Note: Screenshots showcase the user interface of the main modules.*
+<div align="center">
+  <h2>A Visual Tour</h2>
+  <p>Explore the key interfaces of pslms</p>
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+    <!-- Home Page Card -->
+    <div style="flex: 1 1 280px; max-width: 350px; border: 1px solid #e1e4e8; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s;">
+      <img src="screen_shoots/home.png" alt="Home Page" style="width: 100%; height: auto; display: block; border-bottom: 1px solid #e1e4e8;">
+      <div style="padding: 12px; text-align: center; background: #f6f8fa; font-weight: 600; color: #24292e;">Home Page</div>
+    </div>
+    <!-- Login Page Card -->
+    <div style="flex: 1 1 280px; max-width: 350px; border: 1px solid #e1e4e8; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s;">
+      <img src="screen_shoots/login.png" alt="Login Page" style="width: 100%; height: auto; display: block; border-bottom: 1px solid #e1e4e8;">
+      <div style="padding: 12px; text-align: center; background: #f6f8fa; font-weight: 600; color: #24292e;">Login Page</div>
+    </div>
+    <!-- Admin Panel Card -->
+    <div style="flex: 1 1 280px; max-width: 350px; border: 1px solid #e1e4e8; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s;">
+      <img src="screen_shoots/admin_panel.png" alt="Admin Panel" style="width: 100%; height: auto; display: block; border-bottom: 1px solid #e1e4e8;">
+      <div style="padding: 12px; text-align: center; background: #f6f8fa; font-weight: 600; color: #24292e;">Admin Panel</div>
+    </div>
+    <!-- Dashboard Card -->
+    <div style="flex: 1 1 280px; max-width: 350px; border: 1px solid #e1e4e8; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s;">
+      <img src="screen_shoots/Dashbord.png" alt="Dashboard" style="width: 100%; height: auto; display: block; border-bottom: 1px solid #e1e4e8;">
+      <div style="padding: 12px; text-align: center; background: #f6f8fa; font-weight: 600; color: #24292e;">Dashboard</div>
+    </div>
+  </div>
+  <p style="margin-top: 20px; color: #586069;"><em>Click on any image to view full size (if browsing on GitHub).</em></p>
+</div>
 
 ---
 
