@@ -104,45 +104,18 @@ The system is designed to be scalable, maintainable, and easy to deploy, making 
 ## SCREENSHOTS
 
 <div align="center">
-  <h2>📸 Application Interface Gallery</h2>
-  <p>Explore the key screens of pslms in a clean, responsive grid.</p>
 
-  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 30px 0;">
-    <!-- Card 1: Home Page -->
-    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
-      <img src="screen_shoots/home.png" alt="Home Page" style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 15px; text-align: center;">
-        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">🏠 Home Page</span>
-        <p style="color: #7f8c8d; margin: 5px 0 0;">The public face of your school.</p>
-      </div>
-    </div>
-    <!-- Card 2: Login Page -->
-    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
-      <img src="screen_shoots/login.png" alt="Login Page" style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 15px; text-align: center;">
-        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">🔐 Login Page</span>
-        <p style="color: #7f8c8d; margin: 5px 0 0;">Secure entry for all roles.</p>
-      </div>
-    </div>
-    <!-- Card 3: Admin Panel -->
-    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
-      <img src="screen_shoots/admin_panel.png" alt="Admin Panel" style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 15px; text-align: center;">
-        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">👨‍💼 Admin Panel</span>
-        <p style="color: #7f8c8d; margin: 5px 0 0;">Centralized school management.</p>
-      </div>
-    </div>
-    <!-- Card 4: Dashboard -->
-    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
-      <img src="screen_shoots/Dashbord.png" alt="Dashboard" style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 15px; text-align: center;">
-        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">📊 Dashboard</span>
-        <p style="color: #7f8c8d; margin: 5px 0 0;">At-a-glance insights and controls.</p>
-      </div>
-    </div>
-  </div>
+### 📸 Application Interface
 
-  <p style="margin-top: 10px; color: #586069;"><em>Hover over cards for a subtle lift effect. Click on any image to view full size (if browsing on GitHub).</em></p>
+|                         |                         |
+|:-----------------------:|:-----------------------:|
+| ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) |
+| **🏠 Home Page**<br>Public interface | **🔐 Login Page**<br>Secure entry |
+| ![Admin Panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
+| **👨‍💼 Admin Panel**<br>Centralized management | **📊 Dashboard**<br>At-a-glance insights |
+
+*Click on any image to view full size (if browsing on GitHub).*
+
 </div>
 
 ---
