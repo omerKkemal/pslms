@@ -58,6 +58,7 @@
 <p align="center">
   <a href="#overview"><img src="https://img.shields.io/badge/Overview-4CAF50?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#features"><img src="https://img.shields.io/badge/Features-2196F3?style=for-the-badge&logo=readme&logoColor=white"></a>
+  <a href="#screenshots"><img src="https://img.shields.io/badge/Screenshots-FF5722?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#installation"><img src="https://img.shields.io/badge/Installation-FF9800?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#directory-structure"><img src="https://img.shields.io/badge/Directory%20Structure-9C27B0?style=for-the-badge&logo=readme&logoColor=white"></a>
   <a href="#usage"><img src="https://img.shields.io/badge/Usage-607D8B?style=for-the-badge&logo=readme&logoColor=white"></a>
@@ -73,12 +74,6 @@
 
 The system is designed to be scalable, maintainable, and easy to deploy, making it ideal for primary schools looking to digitize their administrative and learning processes.
 
-<p align="center">
-  <img src="screen_shoots/home.png" alt="Home Page" width="80%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-  <br>
-  <em>Welcome to pslms – intuitive and accessible for everyone.</em>
-</p>
-
 ---
 
 ## FEATURES
@@ -92,12 +87,6 @@ The system is designed to be scalable, maintainable, and easy to deploy, making 
 | **Student** | Learning Portal | Student dashboard, view assignments, access learning materials |
 | **Public** | Limited Access | View public pages, home, about, contact information |
 
-<p align="center">
-  <img src="screen_shoots/admin_panel.png" alt="Admin Panel" width="80%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-  <br>
-  <em>The Admin Panel – central control for school management.</em>
-</p>
-
 ### Core Features
 
 | Feature | Description |
@@ -110,11 +99,51 @@ The system is designed to be scalable, maintainable, and easy to deploy, making 
 | **Excel Integration** | Excel directory creation for data export and reporting |
 | **User Authentication** | Secure login/logout functionality for all user roles |
 
-<p align="center">
-  <img src="screen_shoots/login.png" alt="Login Page" width="60%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-  <br>
-  <em>Secure authentication for all user roles.</em>
-</p>
+---
+
+## SCREENSHOTS
+
+<div align="center">
+  <h2>📸 Application Interface Gallery</h2>
+  <p>Explore the key screens of pslms in a clean, responsive grid.</p>
+
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 30px 0;">
+    <!-- Card 1: Home Page -->
+    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
+      <img src="screen_shoots/home.png" alt="Home Page" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+      <div style="padding: 15px; text-align: center;">
+        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">🏠 Home Page</span>
+        <p style="color: #7f8c8d; margin: 5px 0 0;">The public face of your school.</p>
+      </div>
+    </div>
+    <!-- Card 2: Login Page -->
+    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
+      <img src="screen_shoots/login.png" alt="Login Page" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+      <div style="padding: 15px; text-align: center;">
+        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">🔐 Login Page</span>
+        <p style="color: #7f8c8d; margin: 5px 0 0;">Secure entry for all roles.</p>
+      </div>
+    </div>
+    <!-- Card 3: Admin Panel -->
+    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
+      <img src="screen_shoots/admin_panel.png" alt="Admin Panel" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+      <div style="padding: 15px; text-align: center;">
+        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">👨‍💼 Admin Panel</span>
+        <p style="color: #7f8c8d; margin: 5px 0 0;">Centralized school management.</p>
+      </div>
+    </div>
+    <!-- Card 4: Dashboard -->
+    <div style="flex: 1 1 280px; max-width: 350px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; background: white;">
+      <img src="screen_shoots/Dashbord.png" alt="Dashboard" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+      <div style="padding: 15px; text-align: center;">
+        <span style="font-size: 1.2rem; font-weight: 600; color: #2c3e50;">📊 Dashboard</span>
+        <p style="color: #7f8c8d; margin: 5px 0 0;">At-a-glance insights and controls.</p>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top: 10px; color: #586069;"><em>Hover over cards for a subtle lift effect. Click on any image to view full size (if browsing on GitHub).</em></p>
+</div>
 
 ---
 
@@ -277,12 +306,6 @@ http://127.0.0.1:5000/
 | `/admin/*` | Admin Only | Admin dashboard and management |
 | `/teacher/*` | Teacher Only | Teacher dashboard and tools |
 | `/student/*` | Student Only | Student portal |
-
-<p align="center">
-  <img src="screen_shoots/Dashbord.png" alt="Dashboard" width="80%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-  <br>
-  <em>The central Dashboard – your command center.</em>
-</p>
 
 ---
 
