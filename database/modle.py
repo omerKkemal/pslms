@@ -311,3 +311,23 @@ class Resource(Base):
         resource = f'({self.ID}-{self.section_id}-{self.description}-{self.file_name}-{self.path}-{self.post_t}-{self.post_a}-{self.resource_type})'
         return resource
 
+
+class userMatrix(Base):
+    """Maps a logged-in user to their role for authorization."""
+
+    __tablename__ = 'user_matrix'
+
+    id = Column('id', String, primary_key=True)
+    user_id = Column('user_id', String, nullable=False, index=True)
+    role = Column('role', String(20), nullable=False)
+    username = Column('username', String(50), nullable=False)
+
+    def __init__(self, id, user_id, role, username):
+        self.id = id
+        self.user_id = user_id
+        self.role = role
+        self.username = username
+
+    def __repr__(self):
+        return f'({self.id}-{self.user_id}-{self.role}-{self.username})'
+

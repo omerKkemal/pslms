@@ -9,6 +9,9 @@
 # =========================================================================== #
 
 from flask import render_template, request, Blueprint, session, redirect, url_for,flash
+from flask_login import login_user, logout_user
+
+from auth_user import SessionUser
 from sqlalchemy.orm import sessionmaker
 
 from database.modle import Student, Teacher, Admin
@@ -52,15 +55,22 @@ def login():
             if admin:
                 admin = getlist(_session.query(Admin).filter_by(fullname=username,password=password).all())
                 session['userID'] = admin[0][0]
-                print(session['userID'])
                 session['role'] = var.ROLES[0]
                 session['username'] = username
+
+                # Flask-Login
+                user = SessionUser(session['userID'], session['role'], session['username'])
+                login_user(user)
+
                 var.log(f'login succsesfully --> {admin}')
                 return redirect(url_for('admin.admin'))
             elif student:
-                ...
+                student = getlist(_session.query(Student).filter_by(fname=student[0][0] if False else username,password=password).all())
+                # NOTE: your student/teacher branches are currently '...'
+                # To keep behavior unchanged, we just redirect to login for now.
+                return render_template('login.html')
             elif teacher:
-                ...
+                return render_template('login.html')
             else:
                 message = 'Incorrect Username or Password. Try Again...'
                 return render_template('login.html')
@@ -75,9 +85,14 @@ def login():
 @Login.route('/logout')
 def logout():
     if "userID" in session:
-        session.pop("userID",None)
-        session.pop("role",None)
-        session.pop("username",None)
+        try:
+            logout_user()
+        except Exception:
+            pass
+
+        session.pop("userID", None)
+        session.pop("role", None)
+        session.pop("username", None)
         return redirect(url_for("Login.login"))
-    else:
-        return redirect(url_for("Login.login"))
+
+    return redirect(url_for("Login.login"))

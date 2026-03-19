@@ -9,6 +9,7 @@
 # =========================================================================== #
 
 from flask import request, render_template, Blueprint, url_for, redirect, session
+from flask_login import login_required
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
 import os
@@ -31,6 +32,7 @@ _session = Session()
 Admin.add_app_template_filter(getlist, 'getList')
 
 @Admin.route('/admin/Dashboard')
+@login_required
 def dashboard():
     if "username" in session:
         if session["role"] != "admin":
@@ -62,6 +64,7 @@ def dashboard():
 
 # student info (done!!!!)
 @Admin.route('/admin/panal', methods=['GET'])
+@login_required
 def admin():
     if "username" in session:
         if session["role"] == "admin":
@@ -102,6 +105,7 @@ def admin():
 
 # add student(done!!!)
 @Admin.route('/admin/panal/add_students', methods=['GET', 'POST'])
+@login_required
 def add_students():
     try:
         if 'username' in session:
@@ -159,6 +163,7 @@ def add_students():
 
 # add student()
 @Admin.route('/admin/panal/add_student/<grade>/<section>', methods=['GET', 'POST'])
+@login_required
 def add_student(grade=None, section=None):
     try:
         if 'username' in session:
@@ -206,6 +211,7 @@ def add_student(grade=None, section=None):
 
 
 @Admin.route('/admin/panal/section_info')
+@login_required
 def info():
     try:
         if 'username' in session:
@@ -225,6 +231,7 @@ def info():
 
 
 @Admin.route('/admin/panal/get_students/<grade>/<section>')
+@login_required
 def get_students(grade=False, section=None):
     try:
         if 'username' in session:
@@ -248,6 +255,7 @@ def get_students(grade=False, section=None):
 
 # update basic info(name and gender)
 @Admin.route('/admin/panal/update_student_Basic/<ID>', methods=['GET', 'POST'])
+@login_required
 def update_student_Basic(ID):
     try:
         if 'username' in session:
@@ -289,6 +297,7 @@ def update_student_Basic(ID):
 
 # reset password
 @Admin.route('/admin/panal/reset_password/<role>/<ID>')
+@login_required
 def reset_password(role,ID):
     try:
         if 'username' in session:
@@ -327,6 +336,7 @@ def reset_password(role,ID):
         _session.close()
 # update advance(section , grade and change password)
 @Admin.route('/admin/panal/update_options/<ID>')
+@login_required
 def update_options(ID):
     try:
         if 'username' in session:
@@ -348,6 +358,7 @@ def update_options(ID):
 
 # teacher
 @Admin.route('/admin/panal/add_teacher',methods=['POST', 'GET'])
+@login_required
 def add_teacher():
     try:
         if 'username' in session:
@@ -382,6 +393,7 @@ def add_teacher():
         _session.close()
 
 @Admin.route("/admin/panal/get_teachers")
+@login_required
 def get_teacher():
     try:
         if "username" in session:
@@ -401,6 +413,7 @@ def get_teacher():
 
 
 @Admin.route("/admin/panal/update/<ID>")
+@login_required
 def update_info(ID):
     try:
         if 'username' in session:
@@ -420,6 +433,7 @@ def update_info(ID):
         _session.close()
 
 @Admin.route('/admin/panal/add_subject_to_teacher/<ID>',methods=['POST','GET'])
+@login_required
 def add_subject_to_teacher(ID=None):
     try:
         if 'username' in session:
@@ -462,6 +476,7 @@ def add_subject_to_teacher(ID=None):
 
 
 @Admin.route('/admin/panal/remove_subject_from_teacher/<ID>',methods=['POST','GET'])
+@login_required
 def remove_subject_from_teacher(ID):
     try:
         if 'username' in session:
@@ -528,6 +543,7 @@ def remove_subject_from_teacher(ID):
         _session.close()
 
 @Admin.route('/admin/panal/edit_teacher_info/<ID>',methods=['POST','GET'])
+@login_required
 def edit_teacher_basic_info(ID=None):
     if 'username' in session:
         if session['role'] == 'admin':
@@ -562,6 +578,7 @@ def edit_teacher_basic_info(ID=None):
 
 
 @Admin.route("/add_resource",methods=['POST','GET'])
+@login_required
 def add_resourc():
     try:
         if "username" in session:
@@ -623,6 +640,7 @@ def add_resourc():
 
 
 @Admin.route("/view_resource")
+@login_required
 def view_resour():
     try:
         if "username" in session:
@@ -638,6 +656,7 @@ def view_resour():
 # Delete
 
 @Admin.route('/admin/panal/delete_student', methods=['POST'])
+@login_required
 def delete_student():
     try:
         if 'username' in session:
@@ -668,6 +687,7 @@ def delete_student():
 
 
 @Admin.route('/admin/panal/delete_resource', methods=['POST'])
+@login_required
 def delete_resource():
     try:
         if 'username' in session:
@@ -709,6 +729,7 @@ def delete_resource():
 
 
 @Admin.route('/admin/panal/delete_teacher', methods=['POST'])
+@login_required
 def delete_teacher():
     try:
         if 'username' in session:
