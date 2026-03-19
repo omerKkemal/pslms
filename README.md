@@ -103,13 +103,20 @@ The system is designed to be scalable, maintainable, and easy to deploy, making 
 
 ## SCREENSHOTS
 
-Here are some screenshots of the pslms application in action:
+<div align="center">
 
-| Home Page | Login Page | Admin Panel | Dashboard |
-|:---------:|:----------:|:-----------:|:---------:|
-| ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) | ![Admin Panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
+### 📸 Application Interface
 
-*Note: Screenshots showcase the user interface of the main modules.*
+|                         |                         |
+|:-----------------------:|:-----------------------:|
+| ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) |
+| **🏠 Home Page**<br>Public interface | **🔐 Login Page**<br>Secure entry |
+| ![Admin Panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
+| **👨‍💼 Admin Panel**<br>Centralized management | **📊 Dashboard**<br>At-a-glance insights |
+
+*Click on any image to view full size (if browsing on GitHub).*
+
+</div>
 
 ---
 
@@ -169,7 +176,7 @@ This script will:
 ## DIRECTORY STRUCTURE
 
 ```
-pslms/
+Work/
 │
 ├── 📄 app.py                          # Main Flask application entry point
 ├── 📄 init.py                          # Python initialization script
