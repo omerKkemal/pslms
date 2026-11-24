@@ -1,200 +1,219 @@
-# PSLMS
+# PSLMS — Primary School Learning Management System
+
+> **Because managing a school shouldn't be easy, but at least it can be sarcastic.**
 
 <p align="center">
   <img src="static/img/Logo.jpg" alt="PSLMS logo" width="180">
 </p>
 
-**PSLMS (Primary School Learning Management System)** is a Flask application for managing students, teachers, parents, assessments, subjects, resources, semesters, and in-app school reports.
+<p align="center">
+  <img src="https://img.shields.io/badge/status-works%20on%20my%20machine-brightgreen?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/badge/coffee-47%20cups-brown?style=flat-square" alt="Coffee">
+  <img src="https://img.shields.io/badge/sarcasm-100%25-purple?style=flat-square" alt="Sarcasm">
+  <img src="https://img.shields.io/badge/tests-pass%20(sometimes)-yellow?style=flat-square" alt="Tests">
+  <img src="https://img.shields.io/badge/license-see%20LICENSE-blue?style=flat-square" alt="License">
+</p>
 
-The project uses SQLite and SQLAlchemy for local data storage and a role-based interface for administrators, teachers, students, parents, and public visitors.
+**PSLMS** is a Flask application for managing students, teachers, parents, assessments, subjects, resources, semesters, and in-app school reports. It uses SQLite and SQLAlchemy for local data storage and a role‑based interface for administrators, teachers, students, parents, and public visitors.
+
+> **Disclaimer:** This is a school management system. Not a social network. Not a game. Not a place to share memes (unless you upload them as resources). You're welcome.
 
 ---
 
-## Features
+## Table of Contents
+
+- [Features](#features-or-what-it-pretends-to-do)
+  - [Public](#public)
+  - [Administrator](#administrator)
+  - [Teacher](#teacher)
+  - [Student](#student)
+  - [Parent](#parent)
+  - [Semester and reporting](#semester-and-reporting)
+- [Technology](#technology-because-people-ask)
+- [Project structure](#project-structure-where-files-go-to-live)
+- [Requirements](#requirements-dont-skip-this)
+- [Installation](#installation-the-fun-part)
+- [Running the application](#running-the-application-fingers-crossed)
+- [Default administrator account](#default-administrator-account-change-it-seriously)
+- [Main routes](#main-routes-where-you-can-go)
+- [Configuration and data](#configuration-and-data-where-magic-happens)
+- [Tests](#tests-because-we-have-standards)
+- [Screenshots](#screenshots-because-you-cant-read)
+- [Security notes](#security-notes-please-read-this)
+- [Contributing](#contributing-or-how-to-annoy-me)
+- [License](#license)
+- [Author](#author)
+
+---
+
+## Features (Or: What It Pretends To Do)
 
 ### Public
-
-- Public home page
-- About page
-- Login and logout
-- Role-based access to protected areas
+- **Public home page** – Because even strangers need to see your school's logo.
+- **About page** – A page about the school. Riveting stuff.
+- **Login and logout** – The gateway to chaos. Logging out is optional.
+- **Role‑based access to protected areas** – So students can't delete the database. On purpose, anyway.
 
 ### Administrator
-
-- Dashboard with recent activity and attention items
-- Create, view, update, and delete students
-- Reset student passwords
-- Create, view, update, and delete teachers
-- Assign and remove teacher subjects
-- Create and manage class sections
-- Create, view, update, and delete parents
-- Link parents to students
-- Upload and delete class resources
-- Configure resource types and assessment deadlines
-- Create and manage semesters
-- Generate and view semester reports
-- Automatically publish reports after semester end dates
+- **Dashboard with recent activity and attention items** – So you can pretend you're in control.
+- **Create, view, update, and delete students** – Like Pokémon, but with more paperwork.
+- **Reset student passwords** – Because they will forget them. All of them.
+- **Create, view, update, and delete teachers** – They also forget passwords.
+- **Assign and remove teacher subjects** – The political part of school management.
+- **Create and manage class sections** – Because alphabetical order is too easy.
+- **Create, view, update, and delete parents** – They're people too. Allegedly.
+- **Link parents to students** – Parent trap, but with SQL.
+- **Upload and delete class resources** – PDFs, images, and that one suspicious .zip.
+- **Configure resource types and assessment deadlines** – Rules, rules, rules.
+- **Create and manage semesters** – Time is an illusion. Semesters are not.
+- **Generate and view semester reports** – The moment of truth (and despair).
+- **Automatically publish reports after semester end dates** – Like expired milk, but with more data.
 
 ### Teacher
-
-- Teacher dashboard
-- View assigned classes
-- View students in a class
-- Create assessments
-- Submit and update student grades
-- Calculate and view class ranks
-- Upload and view resources
-- Generate parent grade alerts when subject averages fall below 50%
-- Generate improvement alerts when averages rise above 50%
+- **Teacher dashboard** – A dashboard for teachers. Shocking.
+- **View assigned classes** – The ones you're actually teaching. Remember?
+- **View students in a class** – Faces with names and grades.
+- **Create assessments** – Tests, quizzes, or whatever you call them this week.
+- **Submit and update student grades** – The power is yours.
+- **Calculate and view class ranks** – Because comparing children is a great idea.
+- **Upload and view resources** – Share your knowledge. Or your confusion.
+- **Generate parent grade alerts when subject averages fall below 50%** – Because nothing says "we care" like automated passive‑aggressive emails.
+- **Generate improvement alerts when averages rise above 50%** – Good job! Now do it again.
 
 ### Student
-
-- Student dashboard
-- View grades by semester
-- View subject averages and class grades
-- View available resources
-- Update profile information
+- **Student dashboard** – Your personal corner of academic anxiety.
+- **View grades by semester** – Or avoid looking at them. Your choice.
+- **View subject averages and class grades** – The numbers that define your worth (just kidding... mostly).
+- **View available resources** – Useful stuff, if you bother to download it.
+- **Update profile information** – Change your profile picture to something less embarrassing.
 
 ### Parent
-
-- Parent dashboard
-- View each linked child
-- View child grades by semester
-- View grade-attention and improvement alerts
-- View published semester reports
-- View resources
-- Update parent profile information
+- **Parent dashboard** – Where you can check up on your child without actually talking to them.
+- **View each linked child** – All of them. Even the one you forgot about.
+- **View child grades by semester** – Brace yourself.
+- **View grade‑attention and improvement alerts** – The automated guilt trips.
+- **View published semester reports** – Proof that your kid is actually doing something.
+- **View resources** – Educational materials. Or memes in disguise.
+- **Update parent profile information** – So you can pretend you're tech‑savvy.
 
 ### Semester and reporting
-
-- Semesters have names, start dates, and end dates
-- Administrators can update semester details
-- New assessments can be assigned to the active semester
-- Older assessments without semester information remain unassigned
-- Subject averages are calculated per semester
-- Reports contain subject averages and attention counts
-- Expired semesters are published automatically on the next authenticated request
+- **Semesters have names, start dates, and end dates** – Time is real.
+- **Administrators can update semester details** – Fix the dates you got wrong.
+- **New assessments can be assigned to the active semester** – The ongoing one.
+- **Older assessments without semester information remain unassigned** – Orphan assessments. Sad.
+- **Subject averages are calculated per semester** – Because math is fun.
+- **Reports contain subject averages and attention counts** – Numbers, numbers, numbers.
+- **Expired semesters are published automatically on the next authenticated request** – Magic? No, just code.
 
 ---
 
-## Technology
+## Technology (Because People Ask)
 
 | Technology | Purpose |
 |---|---|
-| Python | Application language |
-| Flask | Web framework |
-| Flask-Login | Session and authentication support |
-| SQLAlchemy | SQLite database models and queries |
-| SQLite | Local application database |
-| Jinja2 | Server-side HTML templates |
-| HTML, CSS, and JavaScript | User interface |
-| unittest | Automated tests |
-| filelock | Safe access to log and lock files |
-| openpyxl | Spreadsheet-related data support |
+| Python | Application language – because we're not savages. |
+| Flask | Web framework – lightweight, like my will to live. |
+| Flask‑Login | Session and authentication support – so you can log in and forget your password. |
+| SQLAlchemy | SQLite database models and queries – ORM magic. |
+| SQLite | Local application database – small, fast, and easy to lose. |
+| Jinja2 | Server‑side HTML templates – because templating is nice. |
+| HTML, CSS, and JavaScript | User interface – the pretty bits. |
+| unittest | Automated tests – sometimes they pass. |
+| filelock | Safe access to log and lock files – so logs don't get corrupted (fingers crossed). |
+| openpyxl | Spreadsheet‑related data support – for the Excel‑inclined. |
 
 ---
 
-## Project structure
+## Project Structure (Where Files Go To Live)
 
 ```text
 pslms/
-├── app.py                 # Flask application and blueprint setup
-├── init.py                # Database, directory, admin, and subject setup
-├── init.sh                # Initialization and application start script
-├── requirements.txt       # Python dependencies
-├── admin/                 # Administrator routes and templates
-├── teacher/               # Teacher routes and templates
-├── student/               # Student routes and templates
-├── parent/                # Parent routes and templates
-├── login/                 # Login routes and templates
-├── public/                # Public pages
-├── event/                 # Success, error, and authorization pages
-├── database/              # SQLAlchemy models and database setup
-├── utility/               # Configuration and shared helpers
-├── data/                  # SQLite database, memory data, and logs
-├── static/                # CSS, JavaScript, images, and uploaded resources
-├── tests/                 # Focused unittest coverage
-└── screen_shoots/         # Project screenshots
+├── app.py                 # Flask application and blueprint setup – the start button
+├── init.py                # Database, directory, admin, and subject setup – the setup wizard
+├── init.sh                # Initialization and application start script – for the lazy
+├── requirements.txt       # Python dependencies – the list of things you need
+├── admin/                 # Administrator routes and templates – where the power is
+├── teacher/               # Teacher routes and templates – where the grading happens
+├── student/               # Student routes and templates – where the confusion is
+├── parent/                # Parent routes and templates – where the questions are
+├── login/                 # Login routes and templates – the gatekeeper
+├── public/                # Public pages – for the unwashed masses
+├── event/                 # Success, error, and authorization pages – where things go wrong
+├── database/              # SQLAlchemy models and database setup – the data bits
+├── utility/               # Configuration and shared helpers – the glue
+├── data/                  # SQLite database, memory data, and logs – the brain
+├── static/                # CSS, JavaScript, images, and uploaded resources – the pretty parts
+├── tests/                 # Focused unittest coverage – the reality check
+└── screen_shoots/         # Project screenshots – the proof
 ```
 
 ---
 
-## Requirements
+## Requirements (Don't Skip This)
 
-- Python 3.8 or newer
-- `pip`
-- Git
-
-The application is configured for SQLite, so no separate database server is required.
+- Python 3.8 or newer – because we're not stuck in 2015.
+- `pip` – the package installer. You know it.
+- Git – to clone the repo. Or download the ZIP. We won't judge. (We will.)
+- The application is configured for SQLite, so no separate database server is required. Hooray for small victories.
 
 ---
 
-## Installation
+## Installation (The Fun Part)
 
 ### 1. Clone the repository
-
 ```bash
 git clone https://github.com/omerKkemal/pslms.git
 cd pslms
 ```
 
 ### 2. Create and activate a virtual environment
-
 Linux/macOS:
-
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
-
 Windows:
-
 ```powershell
 python -m venv venv
 venv\Scripts\activate
 ```
 
 ### 3. Install dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4. Initialize the application
-
 ```bash
 python init.py
 ```
 
-Initialization creates the required database directories and tables, creates the default administrator account, and can add the default subject list.
-
-The setup prompt asks whether to insert default subjects. Enter `y` to add them or `n` to skip this step.
+> **What happens next:** Initialization creates the required database directories and tables, creates the default administrator account, and asks whether to add the default subject list. Enter `y` to add them or `n` to skip. (It's not a trick question. It's a feature.)
 
 ---
 
-## Running the application
+## Running the Application (Fingers Crossed)
 
 ```bash
 python app.py
 ```
 
-Open:
-
+Then open:
 ```text
 http://127.0.0.1:5000/
 ```
 
-Flask debug mode is enabled when the application is started directly through `app.py`.
+Flask debug mode is enabled when you start it directly through `app.py`. Don't worry, it's just a debug mode. What could possibly go wrong?
 
-To initialize and then start the project with the shell script on Linux or macOS:
-
+On Linux or macOS, you can also use:
 ```bash
 bash init.sh
 ```
+(Which initializes and then starts the app, because we're efficient.)
 
 ---
 
-## Default administrator account
+## Default Administrator Account (Change It. Seriously.)
 
 The initialization setup creates an administrator account. The default values are defined in `utility/setting.py`:
 
@@ -203,11 +222,11 @@ Username: admin
 Password: admin
 ```
 
-Change these defaults before using the application outside a local or test environment. After logging in, use the password-reset and account-management options to secure all user accounts.
+> **Warning:** Change these before using the application outside a local or test environment. Because "admin/admin" is the digital equivalent of leaving your front door open with a sign that says "Please rob me." After logging in, use the password‑reset and account‑management options to secure all user accounts. Please. I'm begging you.
 
 ---
 
-## Main routes
+## Main Routes (Where You Can Go)
 
 | Area | Routes |
 |---|---|
@@ -222,14 +241,13 @@ Change these defaults before using the application outside a local or test envir
 | Student portal | `/student/dashboard`, `/student/grades`, `/student/resources`, `/student/profile` |
 | Parent portal | `/parent/dashboard`, `/parent/grades`, `/parent/alerts`, `/parent/reports`, `/parent/resources` |
 
-Protected routes require a valid login session. Role checks determine which portal and actions a user can access.
+Protected routes require a valid login session. Role checks determine which portal and actions a user can access. Because we're not animals.
 
 ---
 
-## Configuration and data
+## Configuration and Data (Where Magic Happens)
 
 Application settings are configured in `utility/setting.py`, including:
-
 - Flask secret key generation
 - SQLite database location
 - Log file location
@@ -240,80 +258,99 @@ Application settings are configured in `utility/setting.py`, including:
 - Resource types
 
 The application stores runtime data under `data/`:
+- `data/db/student.db` – SQLite database (your data lives here)
+- `data/db/memory.json` – grades/sections and temporary application memory (the weird bits)
+- `data/log/log.txt` – application event log (where errors go to die)
 
-- `data/db/student.db` - SQLite database
-- `data/db/memory.json` - grades/sections and temporary application memory
-- `data/log/log.txt` - application event log
-
-Existing installations start by adding missing semester, grade-alert, and report tables without deleting existing database records.
+Existing installations start by adding missing semester, grade‑alert, and report tables without deleting existing database records. Because we're polite like that.
 
 ---
 
-## Tests
+## Tests (Because We Have Standards)
 
 Run the focused test suite from the project root:
-
 ```bash
 python -m unittest discover -s tests -v
 ```
 
 The tests cover:
-
 - Parent attention alerts
 - Parent improvement alerts
-- Semester-scoped subject averages
-- Automatic expired-semester report publication
+- Semester‑scoped subject averages
+- Automatic expired‑semester report publication
 - Administrator resource uploads
 - Configured resource types
-- Memory-backed section values
+- Memory‑backed section values
+
+> **Pro tip:** Run them. They might pass. They might not. It's a journey.
 
 ---
 
-## Screenshots
+## Screenshots (Because You Can't Read)
 
-<div align="center">
+<details>
+<summary><b>Click to expand the gallery (and your expectations)</b></summary>
+
+<br>
 
 | Home | Login |
 |---|---|
 | ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) |
-| **Public home page** | **Login page** |
+| **Public home page** – The digital front door. | **Login page** – Where dreams (and passwords) are made. |
 
 | Admin panel | Dashboard |
 |---|---|
 | ![Admin panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
-| **Administration** | **Application dashboard** |
+| **Administration** – Where the magic (and chaos) happens. | **Application dashboard** – Numbers and graphs to make you feel productive. |
 
-</div>
+</details>
 
 ---
 
-## Security notes
+## Security Notes (Please Read This)
 
 This project is intended as a local or educational application. Before deployment:
 
-- Replace the default administrator credentials
-- Replace the runtime-generated secret key with a persistent environment-based secret
-- Use a production WSGI server and HTTPS
-- Add stronger password hashing and account policy
-- Do not commit `.env`, databases containing real records, uploaded files, or log files
-- Restrict access to configuration and data directories
+- Replace the default administrator credentials – **do it now**.
+- Replace the runtime‑generated secret key with a persistent environment‑based secret – because secrets shouldn't be random.
+- Use a production WSGI server and HTTPS – because HTTP is for cavemen.
+- Add stronger password hashing and account policy – "password123" is not a strong password. Shockingly.
+- Do not commit `.env`, databases containing real records, uploaded files, or log files – git is not a backup tool.
+- Restrict access to configuration and data directories – because not everyone needs to see your database.
+
+> **TL;DR:** This is not secure out of the box. It's a learning project. Don't put it on the internet. I'm warning you. I'm not responsible if you get hacked. Seriously.
 
 ---
 
-## Contributing
+## Contributing (Or: How to Annoy Me)
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make focused code and documentation changes.
-4. Run the tests.
-5. Open a pull request.
+1. Fork the repository – go on, make your own copy.
+2. Create a feature branch – name it something clever.
+3. Make focused code and documentation changes – don't rewrite everything.
+4. Run the tests – they might pass.
+5. Open a pull request – and pray I don't ignore it.
+
+---
 
 ## License
 
-See [LICENSE](LICENSE) for the project license.
+See [LICENSE](LICENSE) for the project license. It's probably MIT. Or not. I don't remember. (It's MIT, probably.)
+
+---
 
 ## Author
 
 **Omer Kemal**
 
 - GitHub: [omerKkemal](https://github.com/omerKkemal)
+
+> Made with coffee, sarcasm, and a deep sense of regret. You're welcome.
+
+---
+
+<p align="center">
+  <sub><b>PSLMS: Because managing a school is hard. At least the code is honest.</b></sub><br>
+  <sub>Built with Flask. Fueled by caffeine. Supported by sarcasm.</sub><br>
+  <sub>No warranty. No refunds. No promises.</sub><br>
+  <sub>Go outside. Touch grass. Or don't. I'm not your mom.</sub>
+</p>
