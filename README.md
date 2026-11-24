@@ -1,235 +1,319 @@
-<!-- LOGO IMAGE -->
-<p align="center">
-  <img src="screen_shot/logo.png" alt="pslms Logo" width="200">
-</p>
+# PSLMS
 
 <p align="center">
-  <strong>pslms</strong><br>
-  <em>Because spreadsheets are for amateurs</em>
+  <img src="static/img/Logo.jpg" alt="PSLMS logo" width="180">
 </p>
 
----
+**PSLMS (Primary School Learning Management System)** is a Flask application for managing students, teachers, parents, assessments, subjects, resources, semesters, and in-app school reports.
 
-## Welcome to the Circus
-
-This is pslms – a Flask-based school management system that I built because someone asked me to and I couldn't say no.  
-It handles students, teachers, admins, events, and all the other nonsense that comes with running a primary school.
-
-Is it perfect? No.  
-Does it work? Mostly.  
-Will I fix the bugs? Eventually.  
+The project uses SQLite and SQLAlchemy for local data storage and a role-based interface for administrators, teachers, students, parents, and public visitors.
 
 ---
 
-## Why Does This Exist?
+## Features
 
-Let's be honest – managing a school with paper and Excel is a nightmare.  
-Someone had to do something about it. That someone was me.  
-Now you can manage students, teachers, classes, and subjects without losing your mind.
+### Public
 
-**What it does:**
-- Lets admins control everything (because someone has to)
-- Gives teachers tools to manage classes (they deserve it)
-- Gives students access to learning materials (the whole point)
-- Lets the public see what's happening (transparency or whatever)
+- Public home page
+- About page
+- Login and logout
+- Role-based access to protected areas
 
-**What it doesn't do:**
-- Make you coffee
-- Grade papers for you
-- Fix your life choices
+### Administrator
+
+- Dashboard with recent activity and attention items
+- Create, view, update, and delete students
+- Reset student passwords
+- Create, view, update, and delete teachers
+- Assign and remove teacher subjects
+- Create and manage class sections
+- Create, view, update, and delete parents
+- Link parents to students
+- Upload and delete class resources
+- Configure resource types and assessment deadlines
+- Create and manage semesters
+- Generate and view semester reports
+- Automatically publish reports after semester end dates
+
+### Teacher
+
+- Teacher dashboard
+- View assigned classes
+- View students in a class
+- Create assessments
+- Submit and update student grades
+- Calculate and view class ranks
+- Upload and view resources
+- Generate parent grade alerts when subject averages fall below 50%
+- Generate improvement alerts when averages rise above 50%
+
+### Student
+
+- Student dashboard
+- View grades by semester
+- View subject averages and class grades
+- View available resources
+- Update profile information
+
+### Parent
+
+- Parent dashboard
+- View each linked child
+- View child grades by semester
+- View grade-attention and improvement alerts
+- View published semester reports
+- View resources
+- Update parent profile information
+
+### Semester and reporting
+
+- Semesters have names, start dates, and end dates
+- Administrators can update semester details
+- New assessments can be assigned to the active semester
+- Older assessments without semester information remain unassigned
+- Subject averages are calculated per semester
+- Reports contain subject averages and attention counts
+- Expired semesters are published automatically on the next authenticated request
 
 ---
 
-## The Cast of Characters
+## Technology
 
-| Role | What They Can Do | Why They're Here |
-|:-----|:-----------------|:-----------------|
-| **Admin** | Everything. Literally everything. | Someone has to keep the chaos in check |
-| **Teacher** | Manage classes, grade students, share resources | The actual heroes of this story |
-| **Student** | View assignments, access materials | The reason this whole thing exists |
-| **Public** | Look at the homepage, maybe read the about page | For the curious ones |
+| Technology | Purpose |
+|---|---|
+| Python | Application language |
+| Flask | Web framework |
+| Flask-Login | Session and authentication support |
+| SQLAlchemy | SQLite database models and queries |
+| SQLite | Local application database |
+| Jinja2 | Server-side HTML templates |
+| HTML, CSS, and JavaScript | User interface |
+| unittest | Automated tests |
+| filelock | Safe access to log and lock files |
+| openpyxl | Spreadsheet-related data support |
 
 ---
 
-## The Mess Inside (Directory Structure)
+## Project structure
 
+```text
+pslms/
+├── app.py                 # Flask application and blueprint setup
+├── init.py                # Database, directory, admin, and subject setup
+├── init.sh                # Initialization and application start script
+├── requirements.txt       # Python dependencies
+├── admin/                 # Administrator routes and templates
+├── teacher/               # Teacher routes and templates
+├── student/               # Student routes and templates
+├── parent/                # Parent routes and templates
+├── login/                 # Login routes and templates
+├── public/                # Public pages
+├── event/                 # Success, error, and authorization pages
+├── database/              # SQLAlchemy models and database setup
+├── utility/               # Configuration and shared helpers
+├── data/                  # SQLite database, memory data, and logs
+├── static/                # CSS, JavaScript, images, and uploaded resources
+├── tests/                 # Focused unittest coverage
+└── screen_shoots/         # Project screenshots
 ```
-Work/
-│
-├── app.py                          # Where it all begins
-├── init.py                         # Does the boring setup stuff
-├── init.sh                         # For people who hate typing
-├── requirements.txt                # Things you need (yes, all of them)
-│
-├── admin/                          # The boss's office
-├── student/                        # The kids' corner
-├── teacher/                        # The grown-ups' zone
-├── login/                          # The gatekeeper
-├── public/                         # The window to the world
-├── event/                          # Where errors go to haunt you
-├── database/                       # Where your data sleeps
-├── utility/                        # The unsung heroes
-├── data/                           # The boring stuff
-├── static/                         # The pretty stuff
-├── logs/                           # Your new best friends
-├── excel/                          # For the spreadsheet lovers
-└── note/                           # If you feel like writing
-```
-
-I know it's a lot. Just roll with it.
 
 ---
 
-## Getting It Running (Without Breaking Everything)
+## Requirements
 
-### What You Need
+- Python 3.8 or newer
+- `pip`
+- Git
 
-- Python 3.8 or higher (no excuses)
-- pip (I shouldn't have to tell you this)
-- Git (you know what it is)
+The application is configured for SQLite, so no separate database server is required.
 
-### Step 1: Get The Code
+---
+
+## Installation
+
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/omerKkemal/Work.git
-cd Work
+git clone https://github.com/omerKkemal/pslms.git
+cd pslms
 ```
 
-### Step 2: Hide Your Dependencies
+### 2. Create and activate a virtual environment
 
-**Linux / macOS:**
+Linux/macOS:
+
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 ```
 
-**Windows:**
-```bash
+Windows:
+
+```powershell
 python -m venv venv
 venv\Scripts\activate
 ```
 
-### Step 3: Install The Noise
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Let The Magic Happen
+### 4. Initialize the application
 
 ```bash
-bash init.sh
+python init.py
 ```
 
-This does everything.  
-Database creation, default data, admin account – the works.  
-If you skip this, you'll have a bad time.
+Initialization creates the required database directories and tables, creates the default administrator account, and can add the default subject list.
 
-The app creates the alert and semester-report tables automatically on startup for existing installations; this is additive and keeps existing database records.
+The setup prompt asks whether to insert default subjects. Enter `y` to add them or `n` to skip this step.
 
 ---
 
-## Starting The Thing
+## Running the application
 
 ```bash
 python app.py
 ```
 
-Then open your browser and go to:
+Open:
 
-```
+```text
 http://127.0.0.1:5000/
 ```
 
-Congrats. You made it.
+Flask debug mode is enabled when the application is started directly through `app.py`.
+
+To initialize and then start the project with the shell script on Linux or macOS:
+
+```bash
+bash init.sh
+```
 
 ---
 
-## Where You Can Go
+## Default administrator account
 
-| URL | Who Can Go | What's There |
-|:----|:-----------|:-------------|
-| `/` | Anyone | The homepage – start here |
-| `/about` | Anyone | The "about" page – if you care |
-| `/login` | Anyone with credentials | Where you prove you belong |
-| `/admin/*` | Admins only | Where the power lives |
-| `/teacher/*` | Teachers only | Where the teaching happens |
-| `/student/*` | Students only | Where the learning happens |
+The initialization setup creates an administrator account. The default values are defined in `utility/setting.py`:
+
+```text
+Username: admin
+Password: admin
+```
+
+Change these defaults before using the application outside a local or test environment. After logging in, use the password-reset and account-management options to secure all user accounts.
 
 ---
 
-## Screenshots (Because You Asked)
+## Main routes
+
+| Area | Routes |
+|---|---|
+| Public | `/`, `/about` |
+| Authentication | `/login`, `/logout` |
+| Administrator | `/admin/Dashboard`, `/admin/panal`, `/admin/reports` |
+| Students | `/admin/panal/add_students`, `/admin/panal/get_students/<grade>/<section>` |
+| Teachers | `/admin/panal/add_teacher`, `/admin/panal/get_teachers` |
+| Parents | `/admin/panal/get_parents` |
+| Resources | `/add_resource`, `/view_resource`, `/admin/panal/delete_resource` |
+| Teacher portal | `/teacher/dashboard`, `/teacher/classes`, `/teacher/assessment/create` |
+| Student portal | `/student/dashboard`, `/student/grades`, `/student/resources`, `/student/profile` |
+| Parent portal | `/parent/dashboard`, `/parent/grades`, `/parent/alerts`, `/parent/reports`, `/parent/resources` |
+
+Protected routes require a valid login session. Role checks determine which portal and actions a user can access.
+
+---
+
+## Configuration and data
+
+Application settings are configured in `utility/setting.py`, including:
+
+- Flask secret key generation
+- SQLite database location
+- Log file location
+- Memory JSON location
+- Default administrator credentials
+- Resource directories
+- Allowed resource file extensions
+- Resource types
+
+The application stores runtime data under `data/`:
+
+- `data/db/student.db` - SQLite database
+- `data/db/memory.json` - grades/sections and temporary application memory
+- `data/log/log.txt` - application event log
+
+Existing installations start by adding missing semester, grade-alert, and report tables without deleting existing database records.
+
+---
+
+## Tests
+
+Run the focused test suite from the project root:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests cover:
+
+- Parent attention alerts
+- Parent improvement alerts
+- Semester-scoped subject averages
+- Automatic expired-semester report publication
+- Administrator resource uploads
+- Configured resource types
+- Memory-backed section values
+
+---
+
+## Screenshots
 
 <div align="center">
 
-|                         |                         |
-|:-----------------------:|:-----------------------:|
+| Home | Login |
+|---|---|
 | ![Home](screen_shoots/home.png) | ![Login](screen_shoots/login.png) |
-| **Home Page** | **Login Page** |
-| ![Admin Panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
-| **Admin Panel** | **Dashboard** |
+| **Public home page** | **Login page** |
+
+| Admin panel | Dashboard |
+|---|---|
+| ![Admin panel](screen_shoots/admin_panel.png) | ![Dashboard](screen_shoots/Dashbord.png) |
+| **Administration** | **Application dashboard** |
 
 </div>
 
-They look fine. Stop asking.
+---
+
+## Security notes
+
+This project is intended as a local or educational application. Before deployment:
+
+- Replace the default administrator credentials
+- Replace the runtime-generated secret key with a persistent environment-based secret
+- Use a production WSGI server and HTTPS
+- Add stronger password hashing and account policy
+- Do not commit `.env`, databases containing real records, uploaded files, or log files
+- Restrict access to configuration and data directories
 
 ---
 
-## What's Under The Hood
+## Contributing
 
-## Grade alerts and semester reports
+1. Fork the repository.
+2. Create a feature branch.
+3. Make focused code and documentation changes.
+4. Run the tests.
+5. Open a pull request.
 
-Teachers' grade changes create in-app parent alerts when that semester's subject average is below 50%. Each new assessment belongs to the active semester, and parent and student grade pages can switch between terms. Admins set non-overlapping start/end dates; after an end date passes, reports are automatically published on the next authenticated request. Reports contain that semester's subject averages and attention-alert counts. Older assessments have no date information, so they remain unassigned rather than being attributed to an incorrect semester.
+## License
 
-| Technology | What It Does |
-|:-----------|:-------------|
-| Flask | Makes the web part work |
-| Python | The language I'm stuck with |
-| SQLite | Where data lives (for now) |
-| Jinja2 | Makes HTML bearable |
-| HTML5 | The skeleton |
-| CSS3 | Makes it not ugly |
-| JavaScript | Makes it do things |
+See [LICENSE](LICENSE) for the project license.
 
----
+## Author
 
-## What's Next (Maybe)
-
-Some day, if I feel like it:
-
-- Attendance tracking – because someone has to know who showed up
-- Gradebooks – for the number crunchers
-- Parent portals – because parents are nosy
-- Calendars – so you know what day it is
-- Messaging – because emails are too slow
-- Report cards – automated, because manual is for peasants
-- Mobile apps – because everyone's on their phone
-
----
-
-## The Person Behind This
-
-**Omer Kemal** – developer, caffeine addict, and occasional sleeper.
+**Omer Kemal**
 
 - GitHub: [omerKkemal](https://github.com/omerKkemal)
-- Website: [omerkemal.com](https://www.omerkemal.com)
-
-Found a bug? Tell me.  
-Want to help? Send a PR.  
-Just being rude? Go away.
-
----
-
-## The Legal Stuff
-
-MIT License – use it, modify it, break it. Just don't blame me.
-
-Copyright (c) 2024 Omer Kemal
-
----
-
-<p align="center">
-  <sub>Made with caffeine, frustration, and questionable life choices.</sub>
-  <br>
-  <sub>Go outside. Touch grass. I'll still be here. Coding. Crying.</sub>
-</p>
