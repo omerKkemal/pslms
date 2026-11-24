@@ -43,6 +43,14 @@
                class="px-3 py-2 rounded-md text-sm font-medium transition {{ 'bg-blue-50 text-blue-700' if active_page == 'get_teachers' else 'text-gray-700 hover:bg-gray-100' }}">
               View Teachers
             </a>
+            <a href="/admin/panal/get_parents" onclick="loading_animation();" 
+               class="px-3 py-2 rounded-md text-sm font-medium transition {{ 'bg-blue-50 text-blue-700' if active_page == 'get_parents' else 'text-gray-700 hover:bg-gray-100' }}">
+              View Parents
+            </a>
+            <a href="{{ url_for('admin.semester_reports') }}" onclick="loading_animation();"
+               class="px-3 py-2 rounded-md text-sm font-medium transition {{ 'bg-blue-50 text-blue-700' if active_page == 'semester_reports' else 'text-gray-700 hover:bg-gray-100' }}">
+              Semester Reports
+            </a>
             <a href="/view_resource" onclick="loading_animation();" 
                class="px-3 py-2 rounded-md text-sm font-medium transition {{ 'bg-blue-50 text-blue-700' if active_page == 'view_resource' else 'text-gray-700 hover:bg-gray-100' }}">
               View Resources
@@ -64,14 +72,17 @@
         <a href="/admin/panal" onclick="loading_animation();" class="block py-2 text-gray-700 hover:text-green-600">Admin Panel</a>
         <a href="/admin/panal/section_info" onclick="loading_animation();" class="block py-2 text-gray-700 hover:text-green-600">View Students</a>
         <a href="/admin/panal/get_teachers" onclick="loading_animation();" class="block py-2 text-gray-700 hover:text-green-600">View Teachers</a>
+        <a href="{{ url_for('admin.semester_reports') }}" onclick="loading_animation();" class="block py-2 text-gray-700 hover:text-green-600">Semester Reports</a>
         <a href="/view_resource" onclick="loading_animation();" class="block py-2 text-gray-700 hover:text-green-600">View Resources</a>
       </div>
     </div>
   </nav>
 
-  <!-- Loading Spinner (hidden by default) -->
-  <div id="loading" class="hidden fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center">
-    <div class="spinner border-4 border-blue-500 border-t-transparent rounded-full w-12 h-12 animate-spin"></div>
+  <div id="page-loader" class="page-loader" hidden aria-hidden="true">
+    <div class="page-loader__card" role="status" aria-live="polite">
+      <span class="page-loader__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span>Loading</span>
+    </div>
   </div>
 
   <!-- Note Popup (hidden by default) -->
@@ -83,6 +94,19 @@
 
   <!-- Main Content Block -->
   <main class="flex-grow container mx-auto px-4 py-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="max-w-7xl mx-auto mb-4 space-y-2" role="status" aria-live="polite">
+          {% for category, message in messages %}
+            {% if category == 'error' %}
+              <div class="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm">{{ message }}</div>
+            {% else %}
+              <div class="p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm">{{ message }}</div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 

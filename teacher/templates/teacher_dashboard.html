@@ -1,0 +1,115 @@
+{% extends "teacher_base.html" %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800">Welcome, {{ teacher.fname }} {{ teacher.lname }}!</h1>
+    <p class="text-gray-600 mt-1">Manage your classes, assessments, student marks, and learning materials.</p>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 text-blue-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Assigned Classes</p>
+        <p class="text-2xl font-bold text-gray-800">{{ assignments | length }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 text-green-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Assessment Types</p>
+        <p class="text-2xl font-bold text-gray-800">{{ assessments_count }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4 text-purple-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Uploaded Resources</p>
+        <p class="text-2xl font-bold text-gray-800">{{ resources_count }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Classes Overview -->
+  <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold text-gray-800">Your Assigned Subjects & Classes</h2>
+      <a href="/teacher/classes" class="text-blue-600 hover:underline text-sm font-medium">View All Classes &rarr;</a>
+    </div>
+
+    {% if assignments | length > 0 %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for a in assignments %}
+          <div class="p-4 border border-gray-200 rounded-lg hover:border-green-500 transition">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-semibold text-gray-800 text-lg">{{ a.subject_name }}</h3>
+                <p class="text-gray-500 text-sm">Grade {{ a.grade }} - Section {{ a.section }}</p>
+              </div>
+              <span class="text-xs bg-green-100 text-green-800 font-semibold px-2 py-0.5 rounded">{{ a.access_level }}</span>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+              <a href="/teacher/class/{{ a.grade }}/{{ a.section }}/{{ a.subject_id }}" class="text-green-600 hover:text-green-700 text-sm font-semibold">
+                Manage Grades &rarr;
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-500 py-4">No subjects assigned yet by the administrator.</p>
+    {% endif %}
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">Quick Actions</h3>
+      <div class="space-y-3">
+        <a href="/teacher/assessment/create" class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-gray-700">
+          <span class="mr-3 text-xl">📝</span>
+          <div>
+            <p class="font-medium">Define Assessment Types</p>
+            <p class="text-xs text-gray-500">Create tests, quizzes, assignments with maximum marks</p>
+          </div>
+        </a>
+        <a href="/teacher/resources" class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-gray-700">
+          <span class="mr-3 text-xl">📁</span>
+          <div>
+            <p class="font-medium">Upload Learning Materials</p>
+            <p class="text-xs text-gray-500">Share worksheets and books with your classes</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">Teacher Instructions</h3>
+      <ul class="text-sm text-gray-600 space-y-2 list-disc pl-5">
+        <li>Click <strong>My Classes</strong> to see all enrolled students per section.</li>
+        <li>Open <strong>Manage Grades</strong> to record scores for any assessment.</li>
+        <li>Run <strong>Calculate Ranks</strong> after grading semester exams to rank students automatically.</li>
+        <li>Resources uploaded will be accessible to students and parents of that section.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

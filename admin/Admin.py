@@ -8,15 +8,22 @@
 #   - GitHub: https://github.com/johndoe                                      #
 # =========================================================================== #
 
-from flask import request, render_template, Blueprint, url_for, redirect, session
+from datetime import date, datetime
+
+from flask import request, render_template, Blueprint, url_for, redirect, session, flash
 from flask_login import login_required
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
+from werkzeug.utils import secure_filename
 import os
 
 from utility._templates_filters import getlist
 from utility.data_processor import read_from_json,allowed_file
-from database.modle import Student, Teacher, CreatAssessment, Assessment, Sections, thought, Parent, Subjects, Resource
+from database.modle import (
+    Student, Teacher, CreatAssessment, Assessment, Sections, thought, Parent,
+    Subjects, Resource, DashboardActivity, AssessmentDeadline, ParentGradeAlert,
+    Semester, SemesterGradeReport, SemesterSubjectAverage
+)
 from database.manage_db import var, engine
 
 
@@ -31,21 +38,298 @@ _session = Session()
 
 Admin.add_app_template_filter(getlist, 'getList')
 
-@Admin.route('/admin/Dashboard')
+
+def _record_dashboard_activity(action):
+    _session.add(DashboardActivity(action=action, actor=session['username']))
+
+
+def _is_assessment_type(assessment_name, assessment_type):
+    words = ''.join(
+        character if character.isalnum() else ' '
+        for character in (assessment_name or '').casefold()
+    ).split()
+    if assessment_type == 'midterm':
+        return bool({'mid', 'midterm'} & set(words))
+    return bool({'final', 'finals'} & set(words))
+
+
+def _collect_attention_items():
+    deadlines = {
+        deadline.assessment_type: deadline.due_at
+        for deadline in _session.query(AssessmentDeadline).all()
+    }
+    now = datetime.now()
+    assignments = (
+        _session.query(thought, Teacher, Subjects)
+        .join(Teacher, Teacher.ID == thought.teacher_id)
+        .join(Subjects, Subjects.ID == thought.subject_id)
+        .filter(thought.access_level == 'Read&Write')
+        .all()
+    )
+    attention_items = []
+
+    for assignment, teacher, subject in assignments:
+        students = (
+            _session.query(Student)
+            .filter(
+                Student.grade == int(assignment.grade),
+                Student.section == assignment.section
+            )
+            .order_by(Student.fname, Student.lname)
+            .all()
+        )
+        if not students:
+            continue
+
+        records = _session.query(Assessment).filter_by(
+            teacher_id=teacher.ID,
+            subject_id=subject.ID,
+            grade=str(assignment.grade),
+            section=assignment.section
+        ).all()
+        records_by_student = {}
+        for record in records:
+            records_by_student.setdefault(record.student_id, []).append(record)
+
+        missing_grade = [
+            student for student in students
+            if not records_by_student.get(student.ID)
+        ]
+        if missing_grade:
+            attention_items.append({
+                'kind': 'missing_grade',
+                'title': 'Missing grade (NG)',
+                'teacher': teacher,
+                'grade': assignment.grade,
+                'section': assignment.section,
+                'subject': subject.subject,
+                'students': missing_grade,
+                'due_at': None
+            })
+
+        for assessment_type, title in (
+            ('midterm', 'Midterm grades overdue'),
+            ('final', 'Final grades overdue')
+        ):
+            due_at = deadlines.get(assessment_type)
+            if due_at is None or due_at > now:
+                continue
+
+            missing_exam_grade = [
+                student for student in students
+                if not any(
+                    _is_assessment_type(record.AssessmentName, assessment_type)
+                    for record in records_by_student.get(student.ID, [])
+                )
+            ]
+            if missing_exam_grade:
+                attention_items.append({
+                    'kind': assessment_type,
+                    'title': title,
+                    'teacher': teacher,
+                    'grade': assignment.grade,
+                    'section': assignment.section,
+                    'subject': subject.subject,
+                    'students': missing_exam_grade,
+                    'due_at': due_at
+                })
+
+    return attention_items
+
+
+def _publish_semester(_session, semester):
+    attention_counts = {
+        (student_id, subject_id): count
+        for student_id, subject_id, count in _session.query(
+            ParentGradeAlert.student_id,
+            ParentGradeAlert.subject_id,
+            func.count(func.distinct(ParentGradeAlert.event_id))
+        )
+        .filter(
+            ParentGradeAlert.semester_id == semester.ID,
+            ParentGradeAlert.alert_type == 'attention'
+        )
+        .group_by(ParentGradeAlert.student_id, ParentGradeAlert.subject_id)
+        .all()
+    }
+
+    averages = _session.query(SemesterSubjectAverage).filter_by(
+        semester_id=semester.ID
+    ).all()
+    for average in averages:
+        previous_report = (
+            _session.query(SemesterGradeReport)
+            .join(Semester, Semester.ID == SemesterGradeReport.semester_id)
+            .filter(
+                SemesterGradeReport.student_id == average.student_id,
+                SemesterGradeReport.subject_id == average.subject_id,
+                Semester.closed_at.isnot(None)
+            )
+            .order_by(Semester.closed_at.desc())
+            .first()
+        )
+        _session.add(SemesterGradeReport(
+            ID=var.ID(),
+            semester_id=semester.ID,
+            student_id=average.student_id,
+            subject_id=average.subject_id,
+            average=average.average,
+            previous_average=previous_report.average if previous_report else None,
+            attention_count=attention_counts.get(
+                (average.student_id, average.subject_id), 0
+            )
+        ))
+
+    semester.closed_at = datetime.now()
+
+
+def publish_expired_semesters():
+    _session = Session()
+    try:
+        expired_semesters = _session.query(Semester).filter(
+            Semester.ends_on < date.today(),
+            Semester.closed_at.is_(None)
+        ).all()
+        for semester in expired_semesters:
+            _publish_semester(_session, semester)
+        if expired_semesters:
+            _session.commit()
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Automatic semester report publishing error: {e}")
+        raise
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/panal/get_parents')
+@login_required
+def get_parents():
+    try:
+        if 'username' in session:
+            if session['role'] == 'admin':
+                parents = _session.query(Parent).all()
+                all_students = _session.query(Student).all()
+                student_map = {s.ID: f"{s.fname} {s.lname}" for s in all_students}
+                parent_list = []
+                for p in parents:
+                    parent_list.append({
+                        'ID': p.ID,
+                        'fname': p.fname,
+                        'lname': p.lname,
+                        'email': p.email,
+                        'phone': p.phone,
+                        'student_id': p.student_id,
+                        'student_name': student_map.get(p.student_id, '')
+                    })
+                return render_template('get_parents.html', parents=parent_list, all_students=all_students, active_page='get_parents')
+            else:
+                return redirect(url_for('event.unauthorized'))
+        else:
+            return redirect(url_for('Login.login'))
+    except Exception as e:
+        var.log(f"Error in get_parents: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/panal/add_parent', methods=['POST'])
+@login_required
+def add_parent():
+    try:
+        if 'username' in session and session['role'] == 'admin':
+            fname = request.form.get('fname', '').strip()
+            lname = request.form.get('lname', '').strip()
+            email = request.form.get('email', '').strip()
+            phone = request.form.get('phone', '').strip()
+            student_id = request.form.get('student_id', '').strip() or None
+
+            hous_number = request.form.get('hous_number')
+            hous_number = int(hous_number) if hous_number and hous_number.isdigit() else 0
+
+            ID = var.ID()
+            parent = Parent(
+                ID=ID,
+                fname=fname,
+                lname=lname,
+                student_id=student_id,
+                hous_number=hous_number,
+                phone=phone,
+                email=email,
+                password=ID + fname
+            )
+            _session.add(parent)
+            _record_dashboard_activity('Added a parent')
+            _session.commit()
+            return redirect(url_for('admin.get_parents'))
+        else:
+            return redirect(url_for('event.unauthorized'))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Error in add_parent: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/panal/delete_parent', methods=['POST'])
+@login_required
+def delete_parent():
+    try:
+        if 'username' in session and session['role'] == 'admin':
+            parent_id = request.form.get('id')
+            if not parent_id and request.is_json:
+                data = request.get_json()
+                parent_id = data.get('id') if data else None
+
+            if not parent_id:
+                return redirect(url_for('admin.get_parents'))
+
+            p = _session.query(Parent).filter_by(ID=parent_id).first()
+            if p:
+                _session.delete(p)
+                _record_dashboard_activity('Deleted a parent')
+                _session.commit()
+
+            if request.is_json:
+                return {'message': 'Parent deleted successfully'}, 200
+            return redirect(url_for('admin.get_parents'))
+        else:
+            return redirect(url_for('event.unauthorized'))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Error in delete_parent: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route("/admin/Dashboard")
 @login_required
 def dashboard():
     if "username" in session:
         if session["role"] != "admin":
-            return redirect(url_for('event.unautrized'))
+            return redirect(url_for('event.unauthorized'))
         
         total_students = _session.query(Student).count()
         total_teachers = _session.query(Teacher).count()
         total_sections = _session.query(Sections).count()
         total_resources = _session.query(Resource).count()
 
-        # Data for pie chart: count students by gender
-        male_count = _session.query(Student).filter(Student.gender == 'Male').count()
-        female_count = _session.query(Student).filter(Student.gender == 'Female').count()
+        # Gender values are stored as either M/F or Male/Female.
+        male_count = _session.query(Student).filter(
+            func.upper(Student.gender).in_(('M', 'MALE'))
+        ).count()
+        female_count = _session.query(Student).filter(
+            func.upper(Student.gender).in_(('F', 'FEMALE'))
+        ).count()
+        recent_activities = (
+            _session.query(DashboardActivity)
+            .order_by(DashboardActivity.created_at.desc(), DashboardActivity.ID.desc())
+            .limit(10)
+            .all()
+        )
 
         return render_template(
             'dashboard.html',
@@ -55,10 +339,88 @@ def dashboard():
             total_resources=total_resources,
             male_count=male_count,
             female_count=female_count,
+            recent_activities=recent_activities,
             active_page='dashboard'
         )
     else:
         return redirect(url_for('Login.login'))
+
+
+@Admin.route('/admin/reports', methods=['GET', 'POST'])
+@login_required
+def semester_reports():
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('event.unauthorized'))
+
+    try:
+        if request.method == 'POST':
+            name = request.form.get('name', '').strip()
+            try:
+                starts_on = date.fromisoformat(request.form.get('starts_on', ''))
+                ends_on = date.fromisoformat(request.form.get('ends_on', ''))
+            except (TypeError, ValueError):
+                flash('Enter valid semester start and end dates.', 'error')
+                return redirect(url_for('admin.semester_reports'))
+
+            if not name or len(name) > 80:
+                flash('Enter a semester name of 1 to 80 characters.', 'error')
+                return redirect(url_for('admin.semester_reports'))
+            if ends_on < starts_on:
+                flash('The semester end date must be on or after its start date.', 'error')
+                return redirect(url_for('admin.semester_reports'))
+            overlapping_semester = _session.query(Semester).filter(
+                Semester.starts_on <= ends_on,
+                Semester.ends_on >= starts_on
+            ).first()
+            if overlapping_semester:
+                flash('Semester dates cannot overlap another semester.', 'error')
+                return redirect(url_for('admin.semester_reports'))
+            if _session.query(Semester).filter_by(name=name).first():
+                flash('A semester with that name already exists.', 'error')
+                return redirect(url_for('admin.semester_reports'))
+
+            _session.add(Semester(
+                ID=var.ID(),
+                name=name,
+                starts_on=starts_on,
+                ends_on=ends_on
+            ))
+            _session.commit()
+            flash('Semester created. Grades entered within its dates will be reported when it ends.', 'success')
+            return redirect(url_for('admin.semester_reports'))
+
+        semesters = _session.query(Semester).order_by(Semester.starts_on.desc()).all()
+        report_rows = (
+            _session.query(SemesterGradeReport, Semester, Student, Subjects)
+            .join(Semester, Semester.ID == SemesterGradeReport.semester_id)
+            .join(Student, Student.ID == SemesterGradeReport.student_id)
+            .join(Subjects, Subjects.ID == SemesterGradeReport.subject_id)
+            .filter(Semester.closed_at.isnot(None))
+            .order_by(Semester.closed_at.desc(), Student.fname, Subjects.subject)
+            .all()
+        )
+        reports_by_semester = {}
+        for report, semester, student, subject in report_rows:
+            reports_by_semester.setdefault(semester.ID, []).append({
+                'report': report,
+                'student': student,
+                'subject': subject
+            })
+
+        return render_template(
+            'semester_reports.html',
+            semesters=semesters,
+            reports_by_semester=reports_by_semester,
+            today=date.today(),
+            active_page='semester_reports'
+        )
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Semester reports error: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
 
 #Similarly for other routes: 'admin_panal', 'add_students', 'add_teacher', 'resource_option', 'section_info', 'get_teachers'.
 
@@ -68,39 +430,77 @@ def dashboard():
 def admin():
     if "username" in session:
         if session["role"] == "admin":
-            # Get distinct grades from Sections
-            grades = _session.query(Sections.grade).distinct().all()
-            grades = [g[0] for g in grades]  # extract integer values
+            # Load grades and sections from memory.json
+            data, _data = read_from_json()
+            grades = data.Permanent.grade
+            sections = data.Permanent.section
 
-            # Get distinct section names
-            sections = _session.query(Sections.section).distinct().all()
-            sections = [s[0] for s in sections]
-
-            # Get full section list (id, grade, section) for resource dropdown
-            sections_list = _session.query(Sections.ID, Sections.grade, Sections.section).all()
-
-            # Gender mapping (adjust to match your stored values)
-            # In your models, gender is String(2). Common values: 'M'/'F' or 'Male'/'Female'.
-            # We'll use 'M' for male and 'F' for female as an example.
+            # Gender mapping
             gender = {'male': 'M', 'female': 'F'}
 
-            # Get distinct resource types from the Resource table
-            resource = _session.query(Resource.resource_type).distinct().all()
-            resource = [r[0] for r in resource]  # list of type strings
+            resource_types = var.RESOURCE_TYPE
+
+            assessment_deadlines = {
+                deadline.assessment_type: deadline.due_at.strftime('%Y-%m-%dT%H:%M')
+                for deadline in _session.query(AssessmentDeadline).all()
+            }
 
             return render_template(
                 'admin_panal.html',
                 active_page='admin_panal',
                 grades=grades,
                 sections=sections,
-                sections_list=sections_list,
                 gender=gender,
-                resource=resource
+                resource_types=resource_types,
+                assessment_deadlines=assessment_deadlines,
+                attention_items=_collect_attention_items()
             )
         else:
-            return redirect(url_for('event.unautrized'))
+            return redirect(url_for('event.unauthorized'))
     else:
         return redirect(url_for('Login.login'))
+
+
+@Admin.route('/admin/panal/assessment-deadlines', methods=['POST'])
+@login_required
+def save_assessment_deadlines():
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return redirect(url_for('event.unauthorized'))
+
+        for assessment_type in ('midterm', 'final'):
+            value = request.form.get(f'{assessment_type}_due_at', '').strip()
+            deadline = _session.query(AssessmentDeadline).filter_by(
+                assessment_type=assessment_type
+            ).first()
+
+            if value:
+                try:
+                    due_at = datetime.fromisoformat(value)
+                except ValueError:
+                    flash(f'Enter a valid {assessment_type} deadline.', 'error')
+                    return redirect(url_for('admin.admin'))
+
+                if deadline:
+                    deadline.due_at = due_at
+                else:
+                    _session.add(AssessmentDeadline(
+                        assessment_type=assessment_type,
+                        due_at=due_at
+                    ))
+            elif deadline:
+                _session.delete(deadline)
+
+        _session.commit()
+        flash('Assessment deadlines saved.', 'success')
+        return redirect(url_for('admin.admin'))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Error saving assessment deadlines: {e}")
+        flash('Could not save assessment deadlines.', 'error')
+        return redirect(url_for('admin.admin'))
+    finally:
+        _session.close()
 
 
 # add student(done!!!)
@@ -140,9 +540,29 @@ def add_students():
                             print('section was added')
 
                         _session.add(reg)
+
+                        # Automatically create Parent taking student second name (mname) and last name (lname)
+                        parent_phone = request.form.get('parent_phone', '').strip()
+                        parent_email = request.form.get('parent_email', '').strip()
+                        parent_hous = request.form.get('parent_hous_number')
+                        parent_hous_number = int(parent_hous) if parent_hous and parent_hous.isdigit() else 0
+
+                        parent_id = var.ID()
+                        parent_obj = Parent(
+                            ID=parent_id,
+                            fname=mname,
+                            lname=lname,
+                            student_id=ID,
+                            hous_number=parent_hous_number,
+                            phone=parent_phone,
+                            email=parent_email,
+                            password=parent_id + mname
+                        )
+                        _session.add(parent_obj)
+
+                        _record_dashboard_activity('Added a student')
                         _session.commit()
-                        print('student was added')
-                        message = 'meassage'
+                        print('student and parent were added')
                         return redirect(url_for('event.successful'))
                     except Exception as e:
                         _session.rollback()
@@ -180,14 +600,35 @@ def add_student(grade=None, section=None):
                         data, _data = read_from_json()
                         gender = data.Permanent.Gender
                         reg = Student(
-                            ID,  fname, mname,
-                            lname, _gender,ID+fname, section.upper(), grade
+                            ID, fname, mname,
+                            lname, _gender, ID+fname, section.upper(), grade
                         )
                         print(reg)
                         try:
                             _session.add(reg)
+
+                            # Automatically create Parent taking student second name (mname) and last name (lname)
+                            parent_phone = request.form.get('parent_phone', '').strip()
+                            parent_email = request.form.get('parent_email', '').strip()
+                            parent_hous = request.form.get('parent_hous_number')
+                            parent_hous_number = int(parent_hous) if parent_hous and parent_hous.isdigit() else 0
+
+                            parent_id = var.ID()
+                            parent_obj = Parent(
+                                ID=parent_id,
+                                fname=mname,
+                                lname=lname,
+                                student_id=ID,
+                                hous_number=parent_hous_number,
+                                phone=parent_phone,
+                                email=parent_email,
+                                password=parent_id + mname
+                            )
+                            _session.add(parent_obj)
+
+                            _record_dashboard_activity('Added a student')
                             _session.commit()
-                            print('student was added')
+                            print('student and parent were added')
                             _session.close()
                             return redirect(url_for('event.successful'))
                         except Exception as e:
@@ -246,7 +687,7 @@ def get_students(grade=False, section=None):
             else:
                 return redirect(url_for('event.unauthorized'))
         else:
-            return redirect(url_for('Login.login', message=var.NONE_LOGIN_MESSAGE))
+            return redirect(url_for('Login.login'))
     except Exception as e:
         var.log(f"Error occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
@@ -274,20 +715,22 @@ def update_student_Basic(ID):
                     student_lname = request.form['lname']
                     student_gender = request.form["gender"]
 
-                    _session.query(Student).filter_by(ID=ID).update({
+                    updated_students = _session.query(Student).filter_by(ID=ID).update({
                         'fname': student_fname,
                         'mname': student_mname,
                         'lname': student_lname,
                         'gender': student_gender
                     })
+                    if updated_students:
+                        _record_dashboard_activity('Updated a student')
                     _session.commit()
                     _session.close()
                     print(student)
                     return redirect(url_for('event.successful'))
             else:
-                return redirect('event.unauthorized')
+                return redirect(url_for('event.unauthorized'))
         else:
-            return redirect(url_for('login.Login'))
+            return redirect(url_for('Login.login'))
     except Exception as e:
         var.log(f"Error occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
@@ -309,6 +752,7 @@ def reset_password(role,ID):
                     _session.query(Teacher).filter_by(ID=ID).update({
                         'password': new_password
                     })
+                    _record_dashboard_activity('Reset a teacher password')
                 elif role == "student":
                     endpoint = "options"
                     student = getlist(_session.query(Student).filter_by(ID=ID).all())
@@ -316,19 +760,21 @@ def reset_password(role,ID):
                     _session.query(Student).filter_by(ID=ID).update({
                         'password': new_password
                     })
+                    _record_dashboard_activity('Reset a student password')
                 elif role == 'parent':
-                    parent = getlist(_session.query(Parent).filter_by(ID=ID).all())
-                    new_password = parent[0][0] + parent[0][1]
-                    _session.query(Parent).filter_by(ID=ID).update({
-                        'password': new_password
-                    })
+                    parent = _session.query(Parent).filter_by(ID=ID).first()
+                    if parent:
+                        parent.password = parent.ID + parent.fname
+                        _record_dashboard_activity('Reset a parent password')
+                        _session.commit()
+                    return redirect(url_for("admin.get_parents"))
                 
                 _session.commit()
                 return redirect(url_for(f"admin.update_{endpoint}",ID=ID))
             else:
-                return redirect('event.unauthorized')
+                return redirect(url_for('event.unauthorized'))
         else:
-            return redirect(url_for('login.Login'))
+            return redirect(url_for('Login.login'))
     except Exception as e:
         var.log(f"Error at reset occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
@@ -346,9 +792,9 @@ def update_options(ID):
             
                 return render_template('update_options.html', student=student)
             else:
-                return redirect('event.unauthorized')
+                return redirect(url_for('event.unauthorized'))
         else:
-            return redirect(url_for('login.Login'))
+            return redirect(url_for('Login.login'))
     except Exception as e:
         var.log(f"Error occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
@@ -369,11 +815,13 @@ def add_teacher():
                     lname = request.form["lname"]
                     gender = request.form["gender"]
                     try:
+                        teacher_id = var.ID()
                         teacher = Teacher(
-                            var.ID(), fname, mname,
-                            lname,gender,var.ID() + fname
+                            teacher_id, fname, mname,
+                            lname, gender, teacher_id + fname
                         )
                         _session.add(teacher)
+                        _record_dashboard_activity('Added a teacher')
                         _session.commit()
                         return redirect(url_for('event.successful'))
                     except Exception as e:
@@ -383,7 +831,7 @@ def add_teacher():
                 elif request.method == "GET":
                     return 'unvalid request method'
             else:
-                return redirect('event.unauthorized')
+                return redirect(url_for('event.unauthorized'))
         else:
             return redirect(url_for('Login.login'))
     except Exception as e:
@@ -423,9 +871,9 @@ def update_info(ID):
             
                 return render_template('update_info.html', teacher=teacher)
             else:
-                return redirect('event.unauthorized')
+                return redirect(url_for('event.unauthorized'))
         else:
-            return redirect(url_for('login.Login'))
+            return redirect(url_for('Login.login'))
     except Exception as e:
         var.log(f"Error occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
@@ -440,18 +888,31 @@ def add_subject_to_teacher(ID=None):
             if session['role'] == 'admin':
                 if request.method == 'POST':
                     if ID:
-                        subject = request.form['subject']
+                        subjects = request.form.getlist('subjects')
+                        # fallback if single select was passed
+                        if not subjects and 'subject' in request.form:
+                            subjects = [request.form['subject']]
                         grade = request.form['grade']
                         sections = request.form.getlist('sections')
-                        for section in sections:
-                            try:
-                                _thought = thought(
-                                    var.ID(),subject,ID,grade, section, var.ACCSESS[1]
-                                )
-                                _session.add(_thought)
-                            except Exception as e:
-                                _session.rollback()
-                                var.log(f"Error occurred at routte(/admin/panal/add_subject_to_teacher/): {e}")
+
+                        for subject in subjects:
+                            for section in sections:
+                                # check if assignment already exists
+                                existing = _session.query(thought).filter_by(
+                                    subject_id=subject,
+                                    teacher_id=ID,
+                                    grade=str(grade),
+                                    section=section
+                                ).first()
+                                if not existing:
+                                    try:
+                                        _thought = thought(
+                                            var.ID(), subject, ID, str(grade), section, var.ACCSESS[1]
+                                        )
+                                        _session.add(_thought)
+                                    except Exception as e:
+                                        _session.rollback()
+                                        var.log(f"Error in add_subject_to_teacher: {e}")
                         _session.commit()
                         return redirect(url_for('event.successful'))
                     else:
@@ -464,7 +925,7 @@ def add_subject_to_teacher(ID=None):
                     sections = data.Permanent.section
                     return render_template(
                         'add_subject_to_teacher.html', teacher=getlist(teacher),
-                        sections=sections,grades=grades,subjects=subjects
+                        sections=sections, grades=grades, subjects=subjects
                     )
             else:
                 return redirect(url_for('event.unauthorized'))
@@ -473,6 +934,8 @@ def add_subject_to_teacher(ID=None):
     except Exception as e:
         var.log(f"Error occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
 
 
 @Admin.route('/admin/panal/remove_subject_from_teacher/<ID>',methods=['POST','GET'])
@@ -533,9 +996,9 @@ def remove_subject_from_teacher(ID):
                     return redirect(url_for('event.successful'))
             
             else:
-                return redirect('event.unauthorized')
+                return redirect(url_for('event.unauthorized'))
         else:
-             return redirect(url_for('login.Login'))
+             return redirect(url_for('Login.login'))
     except Exception as e:
         var.log(f"Error occurred: {e}")
         return redirect(url_for('event.internal_server_error'))
@@ -558,12 +1021,14 @@ def edit_teacher_basic_info(ID=None):
                 teacher_lname = request.form['lname']
                 teacher_gender = request.form['gender']
                 try:
-                    _session.query(Teacher).filter_by(ID=ID).update({
+                    updated_teachers = _session.query(Teacher).filter_by(ID=ID).update({
                         'fname': teacher_fname,
                         'mname': teacher_mname,
                         'lname': teacher_lname,
                         'gender': teacher_gender
                     })
+                    if updated_teachers:
+                        _record_dashboard_activity('Updated a teacher')
                     _session.commit()
                     return render_template('edit_teacher_info.html', gender=gender,teacher=teacher)
                 except Exception as e:
@@ -577,66 +1042,79 @@ def edit_teacher_basic_info(ID=None):
         return redirect(url_for('Login.login'))
 
 
-@Admin.route("/add_resource",methods=['POST','GET'])
+@Admin.route("/add_resource", methods=['POST', 'GET'])
+@Admin.route("/admin/panal/add_resource", methods=['POST', 'GET'])
 @login_required
 def add_resourc():
     try:
-        if "username" in session:
-            role = session['role']
-            if request.method == "POST":
-                file_property = request.files['files']
-                description = request.form['description']
-                resource_type = request.form['resource_type']
-                userID = session['userID']
-                sections_id = request.form['section']
-                if session['role'] == "admin":
-                    if allowed_file(filename=file_property.filename):
-                        if resource_type == var.RESOURCE_TYPE[1] or resource_type == var.RESOURCE_TYPE[0]:
-                            file_property.save(
-                                os.path.join(
-                                    var.WORK_SHEET_PATH,
-                                    file_property.filename
-                                )
-                            )
-                            PATH = var.WORK_SHEET_LINK_PATH
+        if 'username' not in session or session.get('role') != 'admin':
+            return redirect(url_for('event.unauthorized'))
 
-                        elif resource_type == var.RESOURCE_TYPE[2]:
-                            file_property.save(
-                                os.path.join(
-                                    var.EXTRA_RESOURCE_PATH,
-                                    file_property.filename
-                                )
-                            )
-                            PATH = var.EXTRA_RESOURCE_LINK_PATH
-                        valid = 1
+        data, _data = read_from_json()
+        grades = data.Permanent.grade
+        sections = data.Permanent.section
 
-                        resourcs = Resource(
-                            var.ID(),sections_id,description,
-                            file_property.filename,PATH,
-                            "None",userID,resource_type,valid
-                        )
-                        _session.add(resourcs)
-                        _session.commit()
-                        return 'succsess'
-                    return "not allowed"
-                elif session['role'] == 'teacher':
-                    valid = 0
-                    resourcs = Resource(
-                        var.ID(),sections_id,description,
-                        file_property.filename,var.RESOURCE_FULL_PATH,
-                        userID,"None",resource_type,valid
-                    )
-                    _session.add(resourcs)
-                    _session.commit()
-                    return 'succsess'
-            else:
-                sections = getlist(_session.query(Sections).all())
-                return render_template("uplaod_resource.html",sections=sections,resource=var.RESOURCE_TYPE)
-        else:
-            return 'i am the problam'
+        if request.method == 'GET':
+            return render_template(
+                'uplaod_resource.html',
+                grades=grades,
+                sections=sections,
+                resource_types=var.RESOURCE_TYPE
+            )
+
+        file_property = request.files.get('files')
+        description = request.form.get('description', '').strip()
+        resource_type = request.form.get('resource_type', '')
+        section_name = request.form.get('section', '').strip().upper()
+        try:
+            grade = int(request.form.get('grade', ''))
+        except (TypeError, ValueError):
+            flash('Choose a valid grade.', 'error')
+            return redirect(url_for('admin.admin'))
+
+        if grade not in grades or section_name not in sections:
+            flash('Choose a grade and section from the available options.', 'error')
+            return redirect(url_for('admin.admin'))
+        if resource_type not in var.RESOURCE_TYPE:
+            flash('Choose Assignment or Worksheet as the resource type.', 'error')
+            return redirect(url_for('admin.admin'))
+        filename = secure_filename(file_property.filename) if file_property and file_property.filename else ''
+        if not filename or not allowed_file(filename):
+            flash('Choose a supported resource file.', 'error')
+            return redirect(url_for('admin.admin'))
+
+        section_record = _session.query(Sections).filter_by(
+            grade=grade,
+            section=section_name
+        ).first()
+        if not section_record:
+            section_record = Sections(var.ID(), section_name, grade)
+            _session.add(section_record)
+            _session.flush()
+
+        os.makedirs(var.WORK_SHEET_PATH, exist_ok=True)
+        file_property.save(os.path.join(var.WORK_SHEET_PATH, filename))
+        _session.add(Resource(
+            ID=var.ID(),
+            section_id=section_record.ID,
+            description=description,
+            file_name=filename,
+            path=var.WORK_SHEET_LINK_PATH,
+            post_t='None',
+            post_a=session['userID'],
+            resource_type=resource_type,
+            valid=1
+        ))
+        _record_dashboard_activity('Uploaded a resource')
+        _session.commit()
+        flash('Resource uploaded successfully.', 'success')
+        return redirect(url_for('admin.admin'))
     except Exception as e:
-        var.log(e)
-        return str(e)
+        _session.rollback()
+        var.log(f"Resource upload error: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
 
 
 @Admin.route("/view_resource")
@@ -646,7 +1124,15 @@ def view_resour():
         if "username" in session:
             role = session['role']
             all_resources = getlist(_session.query(Resource).all())
-            return render_template('view_resources.html',all_resources=all_resources,role=role)
+            data, _data = read_from_json()
+            return render_template(
+                'view_resources.html',
+                all_resources=all_resources,
+                role=role,
+                resource_types=var.RESOURCE_TYPE,
+                grades=data.Permanent.grade,
+                sections=data.Permanent.section
+            )
         else:
             return redirect(url_for('Login.login'))
     except Exception as e:
@@ -668,6 +1154,7 @@ def delete_student():
                     return {'message': 'Student not found'}, 404  # Return error if student doesn't exist
 
                 _session.delete(student)
+                _record_dashboard_activity('Deleted a student')
                 _session.commit()
 
                 return {'message': 'Student deleted successfully'}, 200  # Return success message as JSON
@@ -709,7 +1196,7 @@ def delete_resource():
                     print('path',path)
                 delete = _session.query(Resource).filter_by(ID=data['id']).first()
                 _session.delete(delete)
-                
+                _record_dashboard_activity('Deleted a resource')
                 _session.commit()
 
                 return {'message': 'Resource deleted successfully'}, 200  # Return success message as JSON
@@ -741,6 +1228,7 @@ def delete_teacher():
                     return {'message': 'Teacher not found'}, 404  # Return error if Teacher doesn't exist
 
                 _session.delete(student)
+                _record_dashboard_activity('Deleted a teacher')
                 _session.commit()
 
                 return {'message': 'Teacher deleted successfully'}, 200  # Return success message as JSON

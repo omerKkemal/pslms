@@ -125,6 +125,8 @@ This does everything.
 Database creation, default data, admin account – the works.  
 If you skip this, you'll have a bad time.
 
+The app creates the alert and semester-report tables automatically on startup for existing installations; this is additive and keeps existing database records.
+
 ---
 
 ## Starting The Thing
@@ -174,6 +176,10 @@ They look fine. Stop asking.
 ---
 
 ## What's Under The Hood
+
+## Grade alerts and semester reports
+
+Teachers' grade changes create in-app parent alerts when that semester's subject average is below 50%. Each new assessment belongs to the active semester, and parent and student grade pages can switch between terms. Admins set non-overlapping start/end dates; after an end date passes, reports are automatically published on the next authenticated request. Reports contain that semester's subject averages and attention-alert counts. Older assessments have no date information, so they remain unassigned rather than being attributed to an incorrect semester.
 
 | Technology | What It Does |
 |:-----------|:-------------|

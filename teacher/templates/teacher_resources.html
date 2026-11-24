@@ -1,0 +1,90 @@
+{% extends "teacher_base.html" %}
+
+{% block title %}Upload Resources - Teacher{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Learning Materials & Resources</h1>
+    <p class="text-gray-500 text-sm">Upload worksheets, reference notes, and materials for your students.</p>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Upload New File</h2>
+    <form action="/teacher/resources" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Select File</label>
+        <input type="file" name="file" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Description / Notes</label>
+        <input type="text" name="description" placeholder="e.g. Chapter 4 Practice Exercises" required
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select name="resource_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none">
+            {% for t in resource_types %}
+              <option value="{{ t }}">{{ 'Assignment' if t == 'assigment' else 'Worksheet' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Target Section</label>
+          <select name="section_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none">
+            {% for sec in sections %}
+              <option value="{{ sec.ID }}">Grade {{ sec.grade }} - Section {{ sec.section }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition shadow-sm">
+          Upload Resource
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- My Resources List -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="p-4 border-b border-gray-100">
+      <h2 class="text-lg font-bold text-gray-800">Your Uploaded Files</h2>
+    </div>
+
+    {% if resources | length > 0 %}
+      <div class="divide-y divide-gray-100">
+        {% for r in resources %}
+          <div class="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:bg-gray-50">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">
+                📄
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-800">{{ r.file_name }}</h3>
+                <p class="text-xs text-gray-500">{{ r.description }} | Type: {{ r.resource_type }}</p>
+              </div>
+            </div>
+            <div>
+              <a href="{{ url_for('static', filename=r.path) }}/{{ r.file_name }}" download
+                 class="inline-block bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold px-4 py-2 rounded-lg transition">
+                Download
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-8 text-center text-gray-500">
+        You haven't uploaded any resources yet.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

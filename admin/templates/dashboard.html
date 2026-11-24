@@ -106,26 +106,21 @@
             </tr>
           </thead>
           <tbody>
-            <tr class="border-b">
-              <td class="py-2">Added new student</td>
-              <td class="py-2">admin@school.com</td>
-              <td class="py-2">2 mins ago</td>
-            </tr>
-            <tr class="border-b">
-              <td class="py-2">Uploaded resource "Math.pdf"</td>
-              <td class="py-2">john.teacher</td>
-              <td class="py-2">15 mins ago</td>
-            </tr>
-            <tr class="border-b">
-              <td class="py-2">Updated teacher info</td>
-              <td class="py-2">admin@school.com</td>
-              <td class="py-2">1 hour ago</td>
-            </tr>
-            <tr class="border-b">
-              <td class="py-2">Deleted section 5A</td>
-              <td class="py-2">admin@school.com</td>
-              <td class="py-2">3 hours ago</td>
-            </tr>
+            {% for activity in recent_activities %}
+              <tr class="border-b">
+                <td class="py-2">{{ activity.action }}</td>
+                <td class="py-2">{{ activity.actor }}</td>
+                <td class="py-2">
+                  <time datetime="{{ activity.created_at.isoformat() }}">
+                    {{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}
+                  </time>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td class="py-2 text-gray-500" colspan="3">No recent activities recorded.</td>
+              </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>

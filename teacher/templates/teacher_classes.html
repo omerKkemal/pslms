@@ -1,0 +1,49 @@
+{% extends "teacher_base.html" %}
+
+{% block title %}My Classes - Teacher{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">My Classes & Subjects</h1>
+      <p class="text-gray-500 text-sm">Select a class to enter grades, view students, or compute semester ranks.</p>
+    </div>
+  </div>
+
+  {% if classes | length > 0 %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for c in classes %}
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition">
+          <div class="flex justify-between items-start mb-3">
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+              Grade {{ c.grade }} - {{ c.section }}
+            </span>
+            <span class="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-600">
+              {{ c.access_level }}
+            </span>
+          </div>
+          <h2 class="text-xl font-bold text-gray-800 mb-2">{{ c.subject_name }}</h2>
+          <p class="text-gray-500 text-sm mb-4">Enrolled Students: <strong class="text-gray-700">{{ c.student_count }}</strong></p>
+
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-between space-x-2">
+            <a href="/teacher/class/{{ c.grade }}/{{ c.section }}/{{ c.subject_id }}" 
+               class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+              Grade Class
+            </a>
+            <a href="/teacher/calculate_ranks/{{ c.grade }}/{{ c.section }}"
+               onclick="return confirm('Compute overall student ranks for Grade {{ c.grade }}{{ c.section }}?');"
+               class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition" title="Compute Ranks">
+              Calc Ranks
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white rounded-xl p-8 text-center border border-gray-100">
+      <p class="text-gray-500">No classes assigned to you yet. Please contact the administrator.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

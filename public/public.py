@@ -24,4 +24,4 @@ def index():
 
 @public.route("/about")
 def about():
-    pass
+    return render_template('about.html')

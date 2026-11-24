@@ -1,0 +1,107 @@
+{% extends "student_base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800">Hello, {{ student.fname }}! 👋</h1>
+    <p class="text-gray-600 mt-1">
+      Grade <strong>{{ student.grade }}</strong> - Section <strong>{{ student.section }}</strong> | Student ID: <strong>{{ student.ID }}</strong>
+      {% if current_semester %}| Semester: <strong>{{ current_semester.name }}</strong>{% endif %}
+    </p>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
+    <!-- Rank -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4 text-yellow-600 font-bold text-xl">
+        🏆
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Class Rank</p>
+        <p class="text-2xl font-bold text-gray-800">{{ rank if rank else 'N/A' }}</p>
+      </div>
+    </div>
+
+    <!-- Average -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 text-green-600 font-bold text-xl">
+        📊
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Average Score</p>
+        <p class="text-2xl font-bold text-gray-800">{{ overall_avg ~ '%' if overall_avg is not none else 'Pending' }}</p>
+      </div>
+    </div>
+
+    <!-- Subjects -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 text-blue-600 font-bold text-xl">
+        📚
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Enrolled Subjects</p>
+        <p class="text-2xl font-bold text-gray-800">{{ subjects_count }}</p>
+      </div>
+    </div>
+
+    <!-- Resources -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center">
+      <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4 text-purple-600 font-bold text-xl">
+        📁
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wide">Class Resources</p>
+        <p class="text-2xl font-bold text-gray-800">{{ resources_count }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Assessment Scores -->
+  <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold text-gray-800">Your Recent Scores</h2>
+      <a href="/student/grades" class="text-blue-600 hover:underline text-sm font-semibold">View Full Report Card &rarr;</a>
+    </div>
+
+    {% if recent_assessments | length > 0 %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100 text-sm">
+          <thead>
+            <tr class="bg-gray-50 text-gray-600">
+              <th class="py-2.5 px-4 text-left font-semibold">Assessment</th>
+              <th class="py-2.5 px-4 text-left font-semibold">Subject ID</th>
+              <th class="py-2.5 px-4 text-right font-semibold">Score</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for a in recent_assessments[:8] %}
+              <tr class="hover:bg-gray-50">
+                <td class="py-2.5 px-4 font-medium text-gray-800">{{ a.AssessmentName }}</td>
+                <td class="py-2.5 px-4 text-gray-500">{{ a.subject_id }}</td>
+                <td class="py-2.5 px-4 text-right font-bold text-green-600">{{ a.ScoreMark }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 py-4 text-center">No scores recorded yet for this semester.</p>
+    {% endif %}
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <a href="/student/resources" class="block p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-500 transition">
+      <h3 class="text-lg font-bold text-gray-800 mb-2">📁 Download Study Materials</h3>
+      <p class="text-gray-500 text-sm">Access assignments, supplementary worksheets, and books uploaded by teachers.</p>
+    </a>
+    <a href="/student/profile" class="block p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-500 transition">
+      <h3 class="text-lg font-bold text-gray-800 mb-2">⚙️ Student Profile & Password</h3>
+      <p class="text-gray-500 text-sm">View registration info, linked parent details, and change your password.</p>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Semester Reports - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <h1 class="text-3xl font-bold text-gray-800 mb-2">Semester Reports</h1>
+  <p class="text-sm text-gray-500 mb-6">Create non-overlapping semester dates before grading begins. Grades are recorded under the active semester, and its reports are published automatically after the end date on the next system request.</p>
+  <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">Grades entered before semester tracking was enabled have no semester or date and are not assigned to a term automatically.</p>
+
+  <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Create semester</h2>
+    <form method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <div>
+        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Semester name</label>
+        <input id="name" name="name" type="text" maxlength="80" required placeholder="e.g. Semester 1, 2026"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label for="starts_on" class="block text-sm font-medium text-gray-700 mb-1">Starts on</label>
+        <input id="starts_on" name="starts_on" type="date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+      </div>
+      <div>
+        <label for="ends_on" class="block text-sm font-medium text-gray-700 mb-1">Ends on</label>
+        <input id="ends_on" name="ends_on" type="date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+      </div>
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg">Create semester</button>
+    </form>
+  </section>
+
+  <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Semesters</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="bg-gray-50 text-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold">Semester</th>
+            <th class="px-4 py-3 text-left font-semibold">Dates</th>
+            <th class="px-4 py-3 text-left font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for semester in semesters %}
+            <tr>
+              <td class="px-4 py-3 font-medium">{{ semester.name }}</td>
+              <td class="px-4 py-3">{{ semester.starts_on.strftime('%Y-%m-%d') }} to {{ semester.ends_on.strftime('%Y-%m-%d') }}</td>
+              <td class="px-4 py-3">
+                {% if semester.closed_at %}
+                  Published {{ semester.closed_at.strftime('%Y-%m-%d %H:%M') }}
+                {% elif semester.starts_on > today %}
+                  Scheduled
+                {% else %}
+                  In progress
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td class="px-4 py-4 text-gray-500" colspan="3">No semesters have been created.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% for semester in semesters if semester.closed_at %}
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-1">{{ semester.name }}</h2>
+      <p class="text-sm text-gray-500 mb-4">Published {{ semester.closed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+      {% set rows = reports_by_semester.get(semester.ID, []) %}
+      {% if rows %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-100 text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+              <tr>
+                <th class="px-4 py-3 text-left font-semibold">Student</th>
+                <th class="px-4 py-3 text-left font-semibold">Subject</th>
+                <th class="px-4 py-3 text-right font-semibold">Average</th>
+                <th class="px-4 py-3 text-right font-semibold">Previous</th>
+                <th class="px-4 py-3 text-right font-semibold">Attention alerts</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {% for row in rows %}
+                <tr>
+                  <td class="px-4 py-3">{{ row.student.fname }} {{ row.student.lname }} ({{ row.student.ID }})</td>
+                  <td class="px-4 py-3">{{ row.subject.subject }}</td>
+                  <td class="px-4 py-3 text-right font-semibold">{{ row.report.average|round|int }}%</td>
+                  <td class="px-4 py-3 text-right">{{ (row.report.previous_average|round|int ~ '%') if row.report.previous_average is not none else 'First report' }}</td>
+                  <td class="px-4 py-3 text-right">{{ row.report.attention_count }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500">There were no recorded subject averages when this semester was closed.</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

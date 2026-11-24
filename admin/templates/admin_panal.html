@@ -77,16 +77,58 @@
   <!-- Alerts Section -->
   <div class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-800">Attention Required</h2>
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-lg relative">
-      <span onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-2xl cursor-pointer">&times;</span>
-      <h3 class="font-bold text-lg">Danger!</h3>
-      <p>Red often indicates a dangerous or negative situation.</p>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h3 class="text-lg font-bold text-gray-800 mb-1">Midterm and Final deadlines</h3>
+      <p class="text-sm text-gray-500 mb-4">Teachers will be flagged for missing grades after the deadline passes. Leave a field empty to disable that deadline.</p>
+      <form action="{{ url_for('admin.save_assessment_deadlines') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end" onsubmit="loading_animation();">
+        <div>
+          <label for="midterm_due_at" class="block text-sm font-medium text-gray-700 mb-1">Midterm deadline</label>
+          <input id="midterm_due_at" type="datetime-local" name="midterm_due_at" step="60"
+                 value="{{ assessment_deadlines.get('midterm', '') }}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label for="final_due_at" class="block text-sm font-medium text-gray-700 mb-1">Final deadline</label>
+          <input id="final_due_at" type="datetime-local" name="final_due_at" step="60"
+                 value="{{ assessment_deadlines.get('final', '') }}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg">
+          Save deadlines
+        </button>
+      </form>
     </div>
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-lg relative">
-      <span onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-2xl cursor-pointer">&times;</span>
-      <h3 class="font-bold text-lg">Danger!</h3>
-      <p>Red often indicates a dangerous or negative situation.</p>
-    </div>
+
+    {% if attention_items %}
+      <div class="space-y-3">
+        {% for item in attention_items %}
+          <div class="bg-amber-50 border-l-4 border-amber-400 text-amber-900 p-4 rounded-lg">
+            <h3 class="font-bold text-lg">{{ item.title }}</h3>
+            <p class="text-sm mt-1">
+              <strong>Teacher:</strong> {{ item.teacher.fname }} {{ item.teacher.lname }} (ID: {{ item.teacher.ID }})
+            </p>
+            <p class="text-sm">
+              <strong>Class:</strong> Grade {{ item.grade }} - Section {{ item.section }}
+              <span class="mx-1">|</span>
+              <strong>Subject:</strong> {{ item.subject }}
+            </p>
+            {% if item.due_at %}
+              <p class="text-sm"><strong>Deadline:</strong> {{ item.due_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            {% endif %}
+            <p class="text-sm font-semibold mt-2">Students needing grades:</p>
+            <ul class="text-sm list-disc pl-5 mt-1">
+              {% for student in item.students %}
+                <li>{{ student.fname }} {{ student.mname }} {{ student.lname }} (ID: {{ student.ID }})</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-green-50 border-l-4 border-green-400 text-green-800 p-4 rounded-lg">
+        No missing grades or overdue Midterm/Final grades to report.
+      </div>
+    {% endif %}
   </div>
 </div>
 
@@ -123,6 +165,20 @@
               <option value="{{ section }}">{{ section }}</option>
             {% endfor %}
           </select>
+
+          <!-- Parent Information (Auto-creates Parent using Student Middle Name & Last Name) -->
+          <div class="border-t border-gray-200 pt-3">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Parent / Guardian Contact</p>
+            <div class="space-y-2">
+              <input name="parent_phone" type="text" placeholder="Parent Phone Number"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input name="parent_email" type="email" placeholder="Parent Email Address"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input name="parent_hous_number" type="number" placeholder="House Number (optional)"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Parent name is automatically set from the student's middle & last name.</p>
+          </div>
         </div>
         <div class="mt-6 flex justify-end space-x-3">
           <button type="button" onclick="closeModal('studentModal')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
@@ -189,15 +245,21 @@
           <!-- Resource type -->
           <select name="resource_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">Resource Type</option>
-            {% for type in resource %}
-              <option value="{{ type }}">{{ type }}</option>
+            {% for resource_type in resource_types %}
+              <option value="{{ resource_type }}">{{ 'Assignment' if resource_type == 'assigment' else 'Worksheet' }}</option>
             {% endfor %}
           </select>
-          <!-- Section -->
+          <!-- Grade and section -->
+          <select name="grade" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Grade</option>
+            {% for grade in grades %}
+              <option value="{{ grade }}">{{ grade }}</option>
+            {% endfor %}
+          </select>
           <select name="section" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">Section</option>
-            {% for sec in sections_list %}
-              <option value="{{ sec[0] }}">{{ sec[1] }} {{ sec[2] }}</option>
+            {% for section in sections %}
+              <option value="{{ section }}">{{ section }}</option>
             {% endfor %}
           </select>
         </div>

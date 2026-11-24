@@ -8,7 +8,9 @@
 #   - GitHub: https://github.com/johndoe                                      #
 # =========================================================================== #
 
-from sqlalchemy import ForeignKey, String, Integer, Column, Float
+from datetime import datetime
+
+from sqlalchemy import ForeignKey, String, Integer, Column, Float, DateTime, Date, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -103,24 +105,25 @@ class Parent(Base):
     __tablename__ = 'parent'
 
     ID = Column("id", String, primary_key=True)
-    student_id = Column('student_id',String,ForeignKey('student.id'))
-    hous_number = Column('hous_number',Integer,primary_key=True,nullable=False)
-    fname = Column('fname',String,nullable=False)
-    lname = Column('lname',String,nullable=False)
-    phone = Column('phone',Integer,nullable=False)
-    email = Column('email',String,nullable=False)
+    student_id = Column('student_id', String, ForeignKey('student.id'))
+    hous_number = Column('hous_number', Integer, nullable=True)
+    fname = Column('fname', String, nullable=False)
+    lname = Column('lname', String, nullable=False)
+    phone = Column('phone', String, nullable=True)
+    email = Column('email', String, nullable=True)
+    password = Column('password', String(20), nullable=True)
 
-
-    def __init__(self,ID,hous_number,fname,lname,phone,email):
+    def __init__(self, ID, fname, lname, student_id=None, hous_number=None, phone=None, email=None, password=None):
         self.ID = ID
-        self.hous_number = hous_number
         self.fname = fname
         self.lname = lname
+        self.student_id = student_id
+        self.hous_number = hous_number
         self.phone = phone
         self.email = email
+        self.password = password or (ID + fname)
     
     def __repr__(self):
-
         Parent = f'({self.ID}-{self.student_id}-{self.hous_number}-{self.fname}-{self.lname}-{self.phone}-{self.email})'
         return Parent
 
@@ -130,13 +133,13 @@ class CreatAssessment(Base):
     __tablename__ = 'createassessment'
 
     ID = Column('id', String, nullable=False, primary_key=True)
-    Assessment_of = Column('assessment_of',ForeignKey('teacher.id'))
-    Assessment_name = Column('assessment_name',String)
-    Mark = Column('mark',Float)
+    Assessment_of = Column('assessment_of', ForeignKey('teacher.id'))
+    Assessment_name = Column('assessment_name', String)
+    Mark = Column('mark', Float)
 
-    def __init__(self,ID, Assessment_name, Assessment_of, Mark):
+    def __init__(self, ID, Assessment_name, Assessment_of, Mark):
         self.ID = ID
-        self.Assessment_of = Assessment_name
+        self.Assessment_of = Assessment_of
         self.Assessment_name = Assessment_name
         self.Mark = Mark
 
@@ -149,16 +152,17 @@ class Assessment(Base):
 
     __tablename__ = 'assessment'
 
-    ID = Column('id',String, primary_key=True, nullable=False)
-    student_id = Column('student_id', String,ForeignKey('student.id'), nullable=False)
-    teacher_id = Column('teacher_id', String,ForeignKey('teacher.id'), nullable=False)
+    ID = Column('id', String, primary_key=True, nullable=False)
+    student_id = Column('student_id', String, ForeignKey('student.id'), nullable=False)
+    teacher_id = Column('teacher_id', String, ForeignKey('teacher.id'), nullable=False)
     subject_id = Column('subject_id', String, ForeignKey('subjects.id'), nullable=False)
-    grade = Column('grade',String,nullable=False)
-    section = Column('section',String,nullable=False)
-    AssessmentName = Column('assessmentName',Float,nullable=False)
-    ScoreMark = Column('Score_Mark',String, nullable=False)
+    grade = Column('grade', String, nullable=False)
+    section = Column('section', String, nullable=False)
+    AssessmentName = Column('assessmentName', String, nullable=False)
+    ScoreMark = Column('Score_Mark', Float, nullable=False)
+    semester_id = Column('semester_id', String, ForeignKey('semester.id'))
 
-    def __init__(self, ID, student_id, teacher_id, subject_id,grade,section, AssessmentName, ScoreMark):
+    def __init__(self, ID, student_id, teacher_id, subject_id, grade, section, AssessmentName, ScoreMark, semester_id=None):
         self.ID = ID
         self.student_id = student_id
         self.teacher_id = teacher_id
@@ -167,6 +171,7 @@ class Assessment(Base):
         self.section = section
         self.AssessmentName = AssessmentName
         self.ScoreMark = ScoreMark
+        self.semester_id = semester_id
 
     def __repr__(self):
         AssessmentData = f"({self.ID}-{self.student_id}-{self.teacher_id}-{self.subject_id}-{self.grade}-{self.section}-{self.AssessmentName}-{self.ScoreMark})"
@@ -330,4 +335,74 @@ class userMatrix(Base):
 
     def __repr__(self):
         return f'({self.id}-{self.user_id}-{self.role}-{self.username})'
+
+
+class DashboardActivity(Base):
+    __tablename__ = 'dashboard_activity'
+
+    ID = Column('id', Integer, primary_key=True, autoincrement=True)
+    action = Column('action', String(120), nullable=False)
+    actor = Column('actor', String(50), nullable=False)
+    created_at = Column('created_at', DateTime, nullable=False, default=datetime.now, index=True)
+
+
+class AssessmentDeadline(Base):
+    __tablename__ = 'assessment_deadline'
+
+    assessment_type = Column('assessment_type', String(20), primary_key=True)
+    due_at = Column('due_at', DateTime, nullable=False)
+
+
+class ParentGradeAlert(Base):
+    __tablename__ = 'parent_grade_alert'
+
+    ID = Column('id', String, primary_key=True)
+    parent_id = Column('parent_id', String, ForeignKey('parent.id'), nullable=False, index=True)
+    student_id = Column('student_id', String, ForeignKey('student.id'), nullable=False, index=True)
+    subject_id = Column('subject_id', String, ForeignKey('subjects.id'), nullable=False)
+    semester_id = Column('semester_id', String, ForeignKey('semester.id'), index=True)
+    event_id = Column('event_id', String, nullable=False, index=True)
+    alert_type = Column('alert_type', String(20), nullable=False)
+    average = Column('average', Float, nullable=False)
+    previous_average = Column('previous_average', Float)
+    created_at = Column('created_at', DateTime, nullable=False, default=datetime.now, index=True)
+
+
+class Semester(Base):
+    __tablename__ = 'semester'
+
+    ID = Column('id', String, primary_key=True)
+    name = Column('name', String(80), nullable=False)
+    starts_on = Column('starts_on', Date, nullable=False)
+    ends_on = Column('ends_on', Date, nullable=False)
+    closed_at = Column('closed_at', DateTime)
+    created_at = Column('created_at', DateTime, nullable=False, default=datetime.now)
+
+
+class SemesterSubjectAverage(Base):
+    __tablename__ = 'semester_subject_average'
+    __table_args__ = (
+        UniqueConstraint(
+            'semester_id', 'student_id', 'subject_id',
+            name='uq_semester_student_subject_average'
+        ),
+    )
+
+    ID = Column('id', String, primary_key=True)
+    semester_id = Column('semester_id', String, ForeignKey('semester.id'), nullable=False, index=True)
+    student_id = Column('student_id', String, ForeignKey('student.id'), nullable=False, index=True)
+    subject_id = Column('subject_id', String, ForeignKey('subjects.id'), nullable=False)
+    average = Column('average', Float, nullable=False)
+
+
+class SemesterGradeReport(Base):
+    __tablename__ = 'semester_grade_report'
+
+    ID = Column('id', String, primary_key=True)
+    semester_id = Column('semester_id', String, ForeignKey('semester.id'), nullable=False, index=True)
+    student_id = Column('student_id', String, ForeignKey('student.id'), nullable=False, index=True)
+    subject_id = Column('subject_id', String, ForeignKey('subjects.id'), nullable=False)
+    average = Column('average', Float, nullable=False)
+    previous_average = Column('previous_average', Float)
+    attention_count = Column('attention_count', Integer, nullable=False, default=0)
 

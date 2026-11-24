@@ -63,7 +63,7 @@ class Setting:
         self.JSON_FILE_NAME = 'memory.json'
         self.DB_URI = f'sqlite:///{self.DB_DIR}/{self.DB_NAME}'
 
-        self.RESOURCE_TYPE = ['assigment','work sheet','extra books']
+        self.RESOURCE_TYPE = ['assigment', 'work sheet']
 
         # Admin credentials
         self.ADMIN_USER_NAME = 'admin'
@@ -89,9 +89,10 @@ class Setting:
         self.EXTRA_RESOURCE_FOLDER = 'extra_resources'
         self.EXTRA_RESOURCE_LINK_PATH = f'{self.RESOURCE_PATH}/{self.EXTRA_RESOURCE_FOLDER}'
         self.WORK_SHEET_LINK_PATH = f'{self.RESOURCE_PATH}/{self.WORK_SHEET_FOLDER}'
-        self.RESOURCE_FULL_PATH = 'C:\\Users\\hacker\\PycharmProjects\\Work\\static\\resources'
-        self.EXTRA_RESOURCE_PATH = f'{self.RESOURCE_FULL_PATH}\\{self.EXTRA_RESOURCE_FOLDER}'
-        self.WORK_SHEET_PATH = f'{self.RESOURCE_FULL_PATH}\\{self.WORK_SHEET_FOLDER}'
+        _base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        self.RESOURCE_FULL_PATH = os.path.join(_base_dir, 'static', 'resources')
+        self.EXTRA_RESOURCE_PATH = os.path.join(self.RESOURCE_FULL_PATH, self.EXTRA_RESOURCE_FOLDER)
+        self.WORK_SHEET_PATH = os.path.join(self.RESOURCE_FULL_PATH, self.WORK_SHEET_FOLDER)
 
         # Access levels for teachers
         self.ACCSESS = ['ReadOnly', 'Read&Write', 'Forbidden']

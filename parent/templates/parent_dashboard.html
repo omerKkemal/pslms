@@ -1,0 +1,93 @@
+{% extends "parent_base.html" %}
+
+{% block title %}Parent Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800">Welcome, {{ parent.fname }} {{ parent.lname }}!</h1>
+    <p class="text-gray-600 mt-1">
+      Nur Al-Huda Parent Portal - Tracking your children's academic journeys.
+      {% if current_semester %}Current report period: <strong>{{ current_semester.name }}</strong>{% endif %}
+    </p>
+  </div>
+
+  {% if children_data %}
+    <div class="space-y-6">
+      {% for child_data in children_data %}
+        {% set student = child_data.student %}
+        <section class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div>
+              <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                Linked Child
+              </span>
+              <h2 class="text-2xl font-bold text-gray-800 mt-2">{{ student.fname }} {{ student.mname }} {{ student.lname }}</h2>
+              <p class="text-gray-500 text-sm">Student ID: {{ student.ID }} | Grade {{ student.grade }} - Section {{ student.section }}</p>
+            </div>
+            <div class="flex gap-4">
+              <div class="bg-purple-50 px-4 py-2 rounded-xl text-center">
+                <p class="text-xs text-purple-600">Class Rank</p>
+                <p class="text-xl font-bold text-gray-800">{{ child_data.rank if child_data.rank else 'N/A' }}</p>
+              </div>
+              <div class="bg-purple-50 px-4 py-2 rounded-xl text-center">
+                <p class="text-xs text-purple-600">Average{% if current_semester %} - {{ current_semester.name }}{% endif %}</p>
+                <p class="text-xl font-bold text-gray-800">{{ child_data.overall_avg ~ '%' if child_data.overall_avg is not none else 'N/A' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3 mt-5">
+            <a href="{{ url_for('parent.grades', student_id=student.ID) }}" class="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+              View Grades
+            </a>
+            <a href="{{ url_for('parent.resources', student_id=student.ID) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+              View Class Materials
+            </a>
+          </div>
+
+          <div class="mt-6 border-t border-gray-100 pt-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-3">Latest Assessment Results</h3>
+            {% if child_data.recent_assessments %}
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100 text-sm">
+                  <thead>
+                    <tr class="bg-gray-50 text-gray-600">
+                      <th class="py-2.5 px-4 text-left font-semibold">Assessment</th>
+                      <th class="py-2.5 px-4 text-left font-semibold">Subject ID</th>
+                      <th class="py-2.5 px-4 text-right font-semibold">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100">
+                    {% for assessment in child_data.recent_assessments[:8] %}
+                      <tr class="hover:bg-gray-50">
+                        <td class="py-2.5 px-4 font-medium text-gray-800">{{ assessment.AssessmentName }}</td>
+                        <td class="py-2.5 px-4 text-gray-500">{{ assessment.subject_id }}</td>
+                        <td class="py-2.5 px-4 text-right font-bold text-purple-600">{{ assessment.ScoreMark }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-gray-500 py-2">No assessments recorded yet.</p>
+            {% endif %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+
+    <a href="/parent/profile" class="mt-6 inline-block text-purple-600 hover:underline text-sm font-semibold">
+      Update contact information and password
+    </a>
+
+  {% else %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-xl">
+      <h3 class="text-lg font-bold text-yellow-800 mb-2">No Children Linked</h3>
+      <p class="text-yellow-700 text-sm">
+        No student records are linked to your household yet. Please contact the school administrator.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -11,13 +11,14 @@
 from flask import Flask
 from flask_login import LoginManager, current_user
 
-from admin.Admin import Admin
+from admin.Admin import Admin, publish_expired_semesters
 from login.login import Login
 from student.Student import Student
 from teacher.Teacher import Teachters
+from parent.Parent import parent as ParentBlueprint
 from public.public import public
 from event.event import event
-from database.manage_db import var
+from database.manage_db import var, engine, create_grade_reporting_tables
 
 from auth_user import SessionUser
 
@@ -26,11 +27,12 @@ from flask import redirect, request, url_for, session as flask_session
 
 app = Flask(__name__)
 var.setting_var()
+create_grade_reporting_tables(engine)
 
 app.jinja_env.globals['enumerate'] = enumerate
 app.secret_key = var.SECRAT_KEY
 
-# --- Flask-Login setup (protect /admin/*, /student/*, /teacher/*) ---
+# --- Flask-Login setup (protect /admin/*, /student/*, /teacher/*, /parent/*) ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'Login.login'
@@ -50,13 +52,13 @@ def load_user(user_id):
 
 @app.before_request
 def require_login_for_protected_prefixes():
-    protected_prefixes = ('/admin', '/student', '/teacher')
+    protected_prefixes = ('/admin', '/student', '/teacher', '/parent')
     if request.path.startswith(protected_prefixes):
         if request.path.startswith('/login') or request.path.startswith('/logout'):
             return
-        # This app sets session keys in login/login.py
         if not current_user.is_authenticated:
             return redirect(url_for('Login.login'))
+        publish_expired_semesters()
 
 
 app.register_blueprint(public)
@@ -64,6 +66,7 @@ app.register_blueprint(event)
 app.register_blueprint(Teachters)
 app.register_blueprint(Admin)
 app.register_blueprint(Student)
+app.register_blueprint(ParentBlueprint)
 app.register_blueprint(Login)
 
 

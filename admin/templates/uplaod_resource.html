@@ -50,14 +50,21 @@
           <!-- Selects -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <select name="resource_type" id="resource_type" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
-              {% for x in resource %}
-                <option value="{{ x }}">{{ x }}</option>
+              {% for resource_type in resource_types %}
+                <option value="{{ resource_type }}">{{ 'Assignment' if resource_type == 'assigment' else 'Worksheet' }}</option>
               {% endfor %}
             </select>
 
+            <select name="grade" id="grade" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+              <option value="">Grade</option>
+              {% for grade in grades %}
+                <option value="{{ grade }}">{{ grade }}</option>
+              {% endfor %}
+            </select>
             <select name="section" id="section" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
-              {% for x in sections %}
-                <option value="{{ x[0] }}">{{ x[1] }} {{ x[2] }}</option>
+              <option value="">Section</option>
+              {% for section in sections %}
+                <option value="{{ section }}">{{ section }}</option>
               {% endfor %}
             </select>
           </div>

@@ -35,7 +35,7 @@ def error():
 @event.route('/successful')
 def successful():
     if 'username' in session:
-        return render_template('error.html')
+        return render_template('successful.html', message="Operation completed successfully!")
     else:
         return redirect(url_for('Login.login'))
 

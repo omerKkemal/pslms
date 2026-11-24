@@ -15,9 +15,9 @@ var endPointes = [//lenget 12 or 11 <-- (index start at 0)
 ]
 
 // Delete
-function flaskApi_Delete(ID,index) {
+function flaskApi_Delete(ID, index) {
     var url = loc + endPointes[Number(index)];
-    console.log(url)
+    console.log(url);
     fetch(url, {
         method: 'POST',
         headers: {
@@ -28,27 +28,24 @@ function flaskApi_Delete(ID,index) {
     })
     .then(response => {
         if (response.ok) {
-            console.log(response);
-            hide_loading_animation();
-            alert('Deletaed successfully')
-            loading_animation2();
-            location.reload();
+            hidePageLoader();
+            showNotification('Deleted successfully', 'success');
+            setTimeout(() => location.reload(), 1200);
         } else {
-            console.error(response);
-            hide_loading_animation();
-            alert('Semting Went Wrong :(');
+            hidePageLoader();
+            showNotification('Something went wrong. Try again.', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        hide_loading_animation();
-        alert('Semting Went Wrong :(');
+        hidePageLoader();
+        showNotification('Network error. Try again.', 'error');
     });
 }
 
 // Add Student
 function flaskAddStudent(){
-    loading_animation2();
+    showPageLoader();
     var fname = document.forms['addStudents']['fname'].value;
     var mname = document.forms['addStudents']['mname'].value;
     var lname = document.forms['addStudents']['lnmae'].value;
@@ -75,40 +72,28 @@ function flaskAddStudent(){
     .then(response => {
         if(response.ok){
             console.log(response);
-            hide_loading_animation();
+            hidePageLoader();
             notifcation('Student was add successfully! ^_^','green');
             return true;
         } else {
             console.error(response);
-            hide_loading_animation();
+            hidePageLoader();
             notifcation('Somting went Wrong :( Try again...')
             return false;
         }
     })
     .catch(error => {
         console.error(error);
-        hide_loading_animation();
+        hidePageLoader();
         notifcation('Somting went Wrong :( Try again...')
         return false;
     });
 }
 
-function loading_animation2(){
-    loading.style.display = "flex";
-    content1.style.display = "none";
-    content2.style.display = "none";
-}
-
-function hide_loading_animation(){
-    loading.style.display = "none";
-    content1.style.display = "initial";
-    content2.style.display = "initial";
-}
-
 function _delete(ID,index) {
     var Delete = confirm('Are you sure you want to delete this student?');
     if (Delete) {
-        loading_animation2();
+        showPageLoader();
         flaskApi_Delete(ID,index);
 
     }else{

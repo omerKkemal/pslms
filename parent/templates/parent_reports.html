@@ -1,0 +1,72 @@
+{% extends "parent_base.html" %}
+
+{% block title %}Semester Reports - Parent{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Semester Reports</h1>
+    <p class="text-sm text-gray-500 mt-1">Published reports show subject averages and attention-alert counts captured when the administrator closed each semester.</p>
+  </div>
+
+  {% if children %}
+    <form method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div>
+        <label for="student_id" class="block text-sm font-medium text-gray-700 mb-1">Choose a child</label>
+        <select id="student_id" name="student_id" class="w-full sm:min-w-64 px-4 py-2 border border-gray-300 rounded-lg">
+          {% for child in children %}
+            <option value="{{ child.ID }}" {% if student and child.ID == student.ID %}selected{% endif %}>
+              {{ child.fname }} {{ child.lname }} - Grade {{ child.grade }} {{ child.section }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg">View Reports</button>
+    </form>
+  {% endif %}
+
+  {% if report_rows %}
+    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100">
+      <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <thead class="bg-gray-50 text-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold">Semester</th>
+            <th class="px-4 py-3 text-left font-semibold">Student</th>
+            <th class="px-4 py-3 text-left font-semibold">Subject</th>
+            <th class="px-4 py-3 text-right font-semibold">Average</th>
+            <th class="px-4 py-3 text-right font-semibold">Change</th>
+            <th class="px-4 py-3 text-right font-semibold">Attention alerts</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for row in report_rows %}
+            {% set report = row.report %}
+            <tr>
+              <td class="px-4 py-3">{{ row.semester.name }}</td>
+              <td class="px-4 py-3">{{ row.student.fname }} {{ row.student.lname }}</td>
+              <td class="px-4 py-3">{{ row.subject.subject }}</td>
+              <td class="px-4 py-3 text-right font-semibold">{{ report.average|round|int }}%</td>
+              <td class="px-4 py-3 text-right">
+                {% if report.previous_average is none %}
+                  First report
+                {% elif report.average > report.previous_average %}
+                  <span class="text-green-700">+{{ (report.average - report.previous_average)|round(1) }} pts</span>
+                {% elif report.average < report.previous_average %}
+                  <span class="text-amber-700">-{{ (report.previous_average - report.average)|round(1) }} pts</span>
+                {% else %}
+                  No change
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">{{ report.attention_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="bg-white rounded-xl p-8 text-center border border-gray-100 text-gray-500">
+      {% if children %}No semester reports have been published for this child yet.{% else %}No children are linked to your parent account.{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

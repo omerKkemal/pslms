@@ -1,27 +1,29 @@
 // action.js - Enhanced version with full functionality
 
 // DOM elements
-const loading = document.getElementById("loading");
-const content1 = document.getElementById("content1");
-const content2 = document.getElementById("content2");
+const pageLoader = document.getElementById("page-loader");
 const note = document.getElementById("note");
 const noteTitle = document.getElementById("title");
 const noteSubject = document.getElementById("subject");
 
-// Hide loading spinner and show content on page load
-window.addEventListener('load', () => {
-    if (loading) loading.style.display = "none";
-    if (content1) content1.style.display = "initial";
-    if (content2) content2.style.display = "initial";
-});
+function showPageLoader() {
+    if (!pageLoader) return;
+    pageLoader.hidden = false;
+    pageLoader.setAttribute('aria-hidden', 'false');
+    document.body.setAttribute('aria-busy', 'true');
+}
 
-/**
- * Show loading spinner and hide main content
- */
+function hidePageLoader() {
+    if (!pageLoader) return;
+    pageLoader.hidden = true;
+    pageLoader.setAttribute('aria-hidden', 'true');
+    document.body.removeAttribute('aria-busy');
+}
+
+window.addEventListener('pageshow', hidePageLoader);
+
 function loading_animation() {
-    if (loading) loading.style.display = "flex";
-    if (content1) content1.style.display = "none";
-    if (content2) content2.style.display = "none";
+    showPageLoader();
 }
 
 /**
@@ -30,17 +32,19 @@ function loading_animation() {
 function goBack() {
     if (document.referrer) {
         window.location.href = document.referrer;
+    } else if (window.history.length > 1) {
+        window.history.back();
     } else {
-        window.history.back(); // fallback
+        hidePageLoader();
+        window.location.href = '/';
     }
 }
 
 /**
- * Show loading spinner and go back
+ * Show the page loader and go back
  */
 function loading_back() {
-    loading_animation();
-    // Use setTimeout to ensure spinner is shown before navigation
+    showPageLoader();
     setTimeout(goBack, 50);
 }
 
@@ -110,28 +114,4 @@ window.addEventListener('click', function(event) {
     }
 });
 
-/**
- * Delete function for students/teachers (used in list views)
- * @param {string} id - The ID of the item to delete
- * @param {number} type - The type of item (9=student, 10=teacher, etc.)
- */
-function _delete(id, type) {
-    if (confirm('Are you sure you want to delete this item?')) {
-        // Implement your delete logic here
-        console.log('Delete', id, type);
-        // Example AJAX call:
-        // fetch(`/delete/${type}/${id}`, { method: 'POST' })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) showNotification('Deleted successfully', 'success');
-        //         else showNotification('Delete failed', 'error');
-        //     });
-    }
-}
-
-/**
- * Alias for _delete (used in view_resources.html)
- */
-function flaskApi_Delete(id, type) {
-    _delete(id, type);
-}
+// _delete and flaskApi_Delete are defined in api.js — do not redefine here.

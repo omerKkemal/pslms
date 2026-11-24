@@ -11,8 +11,12 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import inspect
 
-from database.modle import Base, Admin, Subjects
+from database.modle import (
+    Base, Admin, Subjects, ParentGradeAlert, Semester,
+    SemesterSubjectAverage, SemesterGradeReport
+)
 from utility.setting import Setting
 
 # Initialize settings and set variables
@@ -63,6 +67,38 @@ def create_all_db_tables(_engine):
     return 'database was created successfully along with the table'
 
 
+def create_grade_reporting_tables(_engine):
+    Base.metadata.create_all(
+        _engine,
+        tables=[
+            ParentGradeAlert.__table__,
+            Semester.__table__,
+            SemesterSubjectAverage.__table__,
+            SemesterGradeReport.__table__
+        ]
+    )
+    existing_tables = set(inspect(_engine).get_table_names())
+    if 'assessment' in existing_tables:
+        assessment_columns = {
+            column['name'] for column in inspect(_engine).get_columns('assessment')
+        }
+        if 'semester_id' not in assessment_columns:
+            with _engine.begin() as connection:
+                connection.exec_driver_sql(
+                    'ALTER TABLE assessment ADD COLUMN semester_id VARCHAR REFERENCES semester (id)'
+                )
+
+    if 'parent_grade_alert' in existing_tables:
+        alert_columns = {
+            column['name'] for column in inspect(_engine).get_columns('parent_grade_alert')
+        }
+        if 'semester_id' not in alert_columns:
+            with _engine.begin() as connection:
+                connection.exec_driver_sql(
+                    'ALTER TABLE parent_grade_alert ADD COLUMN semester_id VARCHAR REFERENCES semester (id)'
+                )
+
+
 def create_admin_account(_engine):
     # Create a session factory and a new session
     _session = sessionmaker(bind=_engine)
@@ -97,8 +133,8 @@ def default_subject(_engine):
         try:
             subject = Subjects(var.ID(),key,var.SUBJECT_PRIVLAGE[0])
             session.add(subject)
+            session.commit()
         except Exception as e:
             session.rollback()
             return e
-    session.commit()
     return 'Subjects was Added Successfully'
