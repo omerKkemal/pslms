@@ -151,13 +151,16 @@
     <!-- System Notices -->
     <div class="bg-white rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4">System Notices</h2>
-      <div class="space-y-2">
-        <div class="bg-red-50 border-l-4 border-red-500 p-3 text-sm">
-          ⚠️ Server backup due tonight at 2 AM.
-        </div>
-        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 text-sm">
-          📢 New academic year starts next week.
-        </div>
+      <div class="space-y-3">
+        {% for notice in system_notices %}
+          {% set notice_style = 'bg-yellow-50 border-yellow-500' if notice.severity == 'warning' else 'bg-blue-50 border-blue-500' %}
+          <div class="{{ notice_style }} border-l-4 p-3 text-sm">
+            <p class="font-semibold text-gray-800">{{ notice.title }}</p>
+            <p class="text-gray-700">{{ notice.message }}</p>
+          </div>
+        {% else %}
+          <p class="text-sm text-gray-500">No current system notices.</p>
+        {% endfor %}
       </div>
     </div>
   </div>

@@ -66,7 +66,9 @@
 - **Upload and delete class resources** – PDFs, images, and that one suspicious .zip.
 - **Configure resource types and assessment deadlines** – Rules, rules, rules.
 - **Create and manage semesters** – Time is an illusion. Semesters are not.
-- **Generate and view semester reports** – The moment of truth (and despair).
+- **Filter grade reports by grade, section, semester, and assessment type** – A little less scrolling.
+- **Open and print student report cards** – All assessment scores, averages, ranks, and parent alert history in one place.
+- **Calculate class ranks from semester averages** – Admins only, from the grade reports page.
 - **Automatically publish reports after semester end dates** – Like expired milk, but with more data.
 
 ### Teacher
@@ -74,11 +76,12 @@
 - **View assigned classes** – The ones you're actually teaching. Remember?
 - **View students in a class** – Faces with names and grades.
 - **Create assessments** – Tests, quizzes, or whatever you call them this week.
-- **Submit and update student grades** – The power is yours.
-- **Calculate and view class ranks** – Because comparing children is a great idea.
+- **Record grades from your created-assessment dropdown and update specific scores** – Assessment names stay consistent.
+- **See student-level missing midterm/final grade notices after deadlines** – NG means a required score has not been recorded.
+- **Record or update the missing assessment score** – Fill in the gap from the class grading sheet.
 - **Upload and view resources** – Share your knowledge. Or your confusion.
-- **Generate parent grade alerts when subject averages fall below 50%** – Because nothing says "we care" like automated passive‑aggressive emails.
-- **Generate improvement alerts when averages rise above 50%** – Good job! Now do it again.
+- **Alert parents when any assessment score is below 50%** – Alerts show the assessment name and percentage.
+- **Record assessment recoveries and subject-average improvements** – Parents can see when results improve.
 
 ### Student
 - **Student dashboard** – Your personal corner of academic anxiety.
@@ -103,6 +106,8 @@
 - **Older assessments without semester information remain unassigned** – Orphan assessments. Sad.
 - **Subject averages are calculated per semester** – Because math is fun.
 - **Reports contain subject averages and attention counts** – Numbers, numbers, numbers.
+- **Report cards include assessment scores and parent alert history** – Including later improvement for the same assessment or subject average in the same semester.
+- **Class ranks are calculated per semester from subject averages** – Started by an administrator from grade reports.
 - **Expired semesters are published automatically on the next authenticated request** – Magic? No, just code.
 
 ---
@@ -262,7 +267,7 @@ The application stores runtime data under `data/`:
 - `data/db/memory.json` – grades/sections and temporary application memory (the weird bits)
 - `data/log/log.txt` – application event log (where errors go to die)
 
-Existing installations start by adding missing semester, grade‑alert, and report tables without deleting existing database records. Because we're polite like that.
+Existing installations add missing semester, grade‑alert, and report tables, plus the parent-password, alert-assessment, and semester-rank columns needed by current features. These migrations preserve existing database rows.
 
 ---
 

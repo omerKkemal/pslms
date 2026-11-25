@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.fname }} {{ student.lname }} - Grade Report{% endblock %}
+
+{% block head %}
+<style>
+  @media print {
+    nav, .no-print, #page-loader { display: none !important; }
+    body { background: white !important; }
+    main { padding: 0 !important; }
+    .report-card { max-width: none !important; }
+    section, article { break-inside: avoid; box-shadow: none !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-card max-w-5xl mx-auto">
+  <div class="no-print flex items-center justify-between mb-5">
+    <a href="{{ url_for('admin.semester_reports', semester_id=selected_semester.ID) }}"
+       class="text-blue-700 hover:underline">Back to semester reports</a>
+    <button type="button" onclick="window.print()"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg">
+      Print report card
+    </button>
+  </div>
+
+  <header class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+    <p class="text-sm uppercase tracking-wide text-gray-500">Student grade report card</p>
+    <h1 class="text-3xl font-bold text-gray-900 mt-1">{{ student.fname }} {{ student.mname }} {{ student.lname }}</h1>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-sm text-gray-700">
+      <p><strong>Student ID:</strong> {{ student.ID }}</p>
+      <p><strong>Class:</strong> Grade {{ student.grade }} / Section {{ student.section }}</p>
+      <p><strong>Semester:</strong> {{ selected_semester.name }}</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+      <div class="rounded-lg bg-blue-50 p-4">
+        <p class="text-sm text-blue-800">Overall subject average</p>
+        <p class="text-2xl font-bold text-blue-950">{{ (overall_average|round(1) ~ '%') if overall_average is not none else 'No scores' }}</p>
+      </div>
+      <div class="rounded-lg bg-indigo-50 p-4">
+        <p class="text-sm text-indigo-800">Class rank</p>
+        <p class="text-2xl font-bold text-indigo-950">{{ student_rank if student_rank is not none else 'Not calculated' }}</p>
+      </div>
+      <div class="rounded-lg bg-amber-50 p-4">
+        <p class="text-sm text-amber-800">Parent notice events</p>
+        <p class="text-2xl font-bold text-amber-950">{{ parent_notice_history|sum(attribute='notice_count') }}</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">Subject averages</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50 text-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left">Subject</th>
+            <th class="px-4 py-3 text-right">Average</th>
+            <th class="px-4 py-3 text-right">Previous semester</th>
+            <th class="px-4 py-3 text-right">Attention events</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for row in average_rows %}
+            <tr>
+              <td class="px-4 py-3 font-medium">{{ row.subject_name }}</td>
+              <td class="px-4 py-3 text-right">{{ row.average|round(1) }}%</td>
+              <td class="px-4 py-3 text-right">{{ (row.previous_average|round(1) ~ '%') if row.previous_average is not none else '—' }}</td>
+              <td class="px-4 py-3 text-right">{{ row.attention_count if row.attention_count is not none else '—' }}</td>
+            </tr>
+          {% else %}
+            <tr><td class="px-4 py-4 text-gray-500" colspan="4">No subject averages have been recorded for this semester.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">All assessment scores</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50 text-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left">Subject</th>
+            <th class="px-4 py-3 text-left">Assessment</th>
+            <th class="px-4 py-3 text-left">Type</th>
+            <th class="px-4 py-3 text-right">Score</th>
+            <th class="px-4 py-3 text-right">Percentage</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for row in score_rows %}
+            <tr>
+              <td class="px-4 py-3">{{ row.subject_name }}</td>
+              <td class="px-4 py-3">{{ row.assessment.AssessmentName }}</td>
+              <td class="px-4 py-3">{{ row.assessment_type }}</td>
+              <td class="px-4 py-3 text-right">{{ row.assessment.ScoreMark }} / {{ row.max_score }}</td>
+              <td class="px-4 py-3 text-right">{{ row.percentage|round(1) }}%</td>
+            </tr>
+          {% else %}
+            <tr><td class="px-4 py-4 text-gray-500" colspan="5">No assessment scores have been recorded for this semester.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">Parent notice history</h2>
+    <p class="text-sm text-gray-500 mb-4">These are in-app grade alerts recorded for each parent. Assessment alerts are tracked against later updates to that assessment; subject-average improvements are tracked separately.</p>
+    <div class="space-y-5">
+      {% for parent_row in parent_notice_history %}
+        <article class="border border-gray-200 rounded-lg p-4">
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-1 mb-3">
+            <h3 class="font-semibold text-gray-900">{{ parent_row.parent.fname }} {{ parent_row.parent.lname }}</h3>
+            <p class="text-sm text-gray-600">{{ parent_row.notice_count }} notice event{{ 's' if parent_row.notice_count != 1 else '' }} recorded</p>
+          </div>
+          <div class="space-y-3">
+            {% for row in parent_row.history %}
+              <div class="border-l-4 {{ 'border-amber-400' if row.alert.alert_type in ('attention', 'assessment_attention') else 'border-green-400' }} pl-3 py-1">
+                <p class="text-sm font-medium text-gray-800">
+                  {% if row.alert.alert_type == 'assessment_attention' %}
+                    Assessment below 50% · {{ row.alert.assessment_name }} · {{ row.alert.average|round(1) }}%
+                  {% elif row.alert.alert_type == 'assessment_recovery' %}
+                    Assessment recovery · {{ row.alert.assessment_name }} · {{ row.alert.average|round(1) }}%
+                  {% else %}
+                    {{ 'Attention' if row.alert.alert_type == 'attention' else 'Improvement' }} · {{ row.subject_name }} · {{ row.alert.average|round(1) }}%
+                  {% endif %}
+                </p>
+                <p class="text-xs text-gray-500">{{ row.alert.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% if row.improved_event %}
+                  <p class="text-sm text-green-700 mt-1">
+                    Improved afterward to {{ row.improved_event.average|round(1) }}%
+                    ({{ row.improved_event.created_at.strftime('%Y-%m-%d %H:%M') }}).
+                  </p>
+                {% elif row.alert.alert_type in ('attention', 'assessment_attention') %}
+                  <p class="text-sm text-gray-500 mt-1">No later improvement was recorded for this {{ 'assessment' if row.alert.assessment_name else 'subject' }} in this semester.</p>
+                {% endif %}
+              </div>
+            {% else %}
+              <p class="text-sm text-gray-500">No notice events have been recorded for this parent in this semester.</p>
+            {% endfor %}
+          </div>
+        </article>
+      {% else %}
+        <p class="text-sm text-gray-500">No parent accounts are linked to this student.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

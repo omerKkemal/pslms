@@ -62,40 +62,109 @@
     </div>
   </section>
 
-  {% for semester in semesters if semester.closed_at %}
+  <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Filter grade reports</h2>
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+      <div>
+        <label for="semester-filter" class="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+        <select id="semester-filter" name="semester_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          {% for semester in semesters %}
+            <option value="{{ semester.ID }}" {{ 'selected' if selected_semester and selected_semester.ID == semester.ID else '' }}>
+              {{ semester.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="grade-filter" class="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+        <select id="grade-filter" name="grade" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <option value="">All grades</option>
+          {% for grade in grade_options %}
+            <option value="{{ grade }}" {{ 'selected' if selected_grade == grade else '' }}>Grade {{ grade }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="section-filter" class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+        <select id="section-filter" name="section" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <option value="">All sections</option>
+          {% for section in sections %}
+            <option value="{{ section }}" {{ 'selected' if selected_section == section else '' }}>Section {{ section }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="assessment-filter" class="block text-sm font-medium text-gray-700 mb-1">Assessment</label>
+        <select id="assessment-filter" name="assessment_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <option value="all" {{ 'selected' if assessment_type == 'all' else '' }}>All assessments</option>
+          <option value="midterm" {{ 'selected' if assessment_type == 'midterm' else '' }}>Midterm</option>
+          <option value="final" {{ 'selected' if assessment_type == 'final' else '' }}>Final</option>
+        </select>
+      </div>
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg">Apply filters</button>
+    </form>
+    <p class="text-xs text-gray-500 mt-3">Midterm and final categories are inferred from assessment names. Clicking a student opens their full-semester report card, including every assessment score.</p>
+  </section>
+
+  {% if selected_semester %}
     <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-      <h2 class="text-lg font-bold text-gray-800 mb-1">{{ semester.name }}</h2>
-      <p class="text-sm text-gray-500 mb-4">Published {{ semester.closed_at.strftime('%Y-%m-%d %H:%M') }}</p>
-      {% set rows = reports_by_semester.get(semester.ID, []) %}
-      {% if rows %}
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-100 text-sm">
-            <thead class="bg-gray-50 text-gray-600">
-              <tr>
-                <th class="px-4 py-3 text-left font-semibold">Student</th>
-                <th class="px-4 py-3 text-left font-semibold">Subject</th>
-                <th class="px-4 py-3 text-right font-semibold">Average</th>
-                <th class="px-4 py-3 text-right font-semibold">Previous</th>
-                <th class="px-4 py-3 text-right font-semibold">Attention alerts</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              {% for row in rows %}
-                <tr>
-                  <td class="px-4 py-3">{{ row.student.fname }} {{ row.student.lname }} ({{ row.student.ID }})</td>
-                  <td class="px-4 py-3">{{ row.subject.subject }}</td>
-                  <td class="px-4 py-3 text-right font-semibold">{{ row.report.average|round|int }}%</td>
-                  <td class="px-4 py-3 text-right">{{ (row.report.previous_average|round|int ~ '%') if row.report.previous_average is not none else 'First report' }}</td>
-                  <td class="px-4 py-3 text-right">{{ row.report.attention_count }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-gray-800">{{ selected_semester.name }} student reports</h2>
+          <p class="text-sm text-gray-500">
+            {{ selected_semester.starts_on.strftime('%Y-%m-%d') }} to {{ selected_semester.ends_on.strftime('%Y-%m-%d') }}
+            {% if selected_semester.closed_at %} · Published{% else %} · In progress{% endif %}
+          </p>
         </div>
-      {% else %}
-        <p class="text-sm text-gray-500">There were no recorded subject averages when this semester was closed.</p>
-      {% endif %}
+        {% if selected_grade is not none and selected_section %}
+          <form action="{{ url_for('admin.calculate_semester_ranks') }}" method="post">
+            <input type="hidden" name="semester_id" value="{{ selected_semester.ID }}">
+            <input type="hidden" name="grade" value="{{ selected_grade }}">
+            <input type="hidden" name="section" value="{{ selected_section }}">
+            <input type="hidden" name="assessment_type" value="{{ assessment_type }}">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg">
+              Calculate ranks for Grade {{ selected_grade }} / Section {{ selected_section }}
+            </button>
+          </form>
+        {% else %}
+          <p class="text-sm text-gray-500">Select a grade and section to calculate ranks for that class.</p>
+        {% endif %}
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100 text-sm">
+          <thead class="bg-gray-50 text-gray-600">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold">Student</th>
+              <th class="px-4 py-3 text-left font-semibold">Class</th>
+              <th class="px-4 py-3 text-right font-semibold">Semester average</th>
+              <th class="px-4 py-3 text-right font-semibold">Matching assessments</th>
+              <th class="px-4 py-3 text-right font-semibold">Rank</th>
+              <th class="px-4 py-3 text-right font-semibold">Parent alert events</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for row in student_rows %}
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium">
+                  <a class="text-blue-700 hover:underline" href="{{ url_for('admin.student_report_card', student_id=row.student.ID, semester_id=selected_semester.ID) }}">
+                    {{ row.student.fname }} {{ row.student.lname }} ({{ row.student.ID }})
+                  </a>
+                </td>
+                <td class="px-4 py-3">Grade {{ row.student.grade }} / {{ row.student.section }}</td>
+                <td class="px-4 py-3 text-right">{{ (row.overall_average|round(1) ~ '%') if row.overall_average is not none else 'No scores' }}</td>
+                <td class="px-4 py-3 text-right">{{ row.assessment_count }}</td>
+                <td class="px-4 py-3 text-right">{{ row.rank if row.rank is not none else '—' }}</td>
+                <td class="px-4 py-3 text-right">{{ row.parent_notice_events }}</td>
+              </tr>
+            {% else %}
+              <tr><td class="px-4 py-4 text-gray-500" colspan="6">No students match these filters.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
-  {% endfor %}
+  {% else %}
+    <p class="bg-white rounded-xl border border-gray-100 p-6 text-gray-500">Create a semester to view grade reports.</p>
+  {% endif %}
 </div>
 {% endblock %}

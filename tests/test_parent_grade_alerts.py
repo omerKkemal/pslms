@@ -6,10 +6,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from database.modle import (
-    Assessment, Base, CreatAssessment, Parent, ParentGradeAlert, Semester,
+    Assessment, Base, CreatAssessment, Parent, ParentStudent, ParentGradeAlert, Semester,
     SemesterGradeReport, SemesterSubjectAverage, Student, Subjects, Teacher
 )
-from teacher.Teacher import _calculate_subject_average, _notify_parents_of_grade_change
+from teacher.Teacher import (
+    _calculate_subject_average, _notify_parents_of_assessment_result,
+    _notify_parents_of_grade_change
+)
 
 
 class ParentGradeAlertTests(unittest.TestCase):
@@ -23,6 +26,8 @@ class ParentGradeAlertTests(unittest.TestCase):
             Student('S2', 'Ben', 'M', 'Student', 'M', 'password', 'A', 1),
             Parent('P1', 'Parent', 'One', student_id='S1', hous_number=12),
             Parent('P2', 'Parent', 'Two', student_id='S2', hous_number=12),
+            ParentStudent('P1', 'S1'),
+            ParentStudent('P2', 'S2'),
             Subjects('SUB1', 'Math', 'ReadOnly'),
             Teacher('T1', 'Class', 'Teacher', 'One', 'M', 'password'),
             CreatAssessment('DEF1', 'Quiz', 'T1', 100),
@@ -41,18 +46,42 @@ class ParentGradeAlertTests(unittest.TestCase):
         self.session.close()
         self.engine.dispose()
 
-    def test_attention_alert_is_saved_for_each_household_parent(self):
-        _notify_parents_of_grade_change(
-            self.session, 'S1', 'SUB1', 'SEM1', None, 45
+    def test_low_assessment_alert_is_saved_for_each_household_parent(self):
+        _notify_parents_of_assessment_result(
+            self.session, 'S1', 'SUB1', 'SEM1', 'Midterm Exam', None, 45
         )
         self.session.commit()
 
         alerts = self.session.query(ParentGradeAlert).all()
         self.assertEqual({alert.parent_id for alert in alerts}, {'P1', 'P2'})
-        self.assertEqual({alert.alert_type for alert in alerts}, {'attention'})
+        self.assertEqual(
+            {alert.alert_type for alert in alerts}, {'assessment_attention'}
+        )
         self.assertEqual({alert.average for alert in alerts}, {45})
+        self.assertEqual({alert.assessment_name for alert in alerts}, {'Midterm Exam'})
         self.assertEqual({alert.semester_id for alert in alerts}, {'SEM1'})
         self.assertEqual(len({alert.event_id for alert in alerts}), 1)
+
+    def test_assessment_recovery_is_recorded_after_a_low_result(self):
+        _notify_parents_of_assessment_result(
+            self.session, 'S1', 'SUB1', 'SEM1', 'Midterm Exam', 45, 55
+        )
+        self.session.commit()
+
+        alerts = self.session.query(ParentGradeAlert).all()
+        self.assertEqual(
+            {alert.alert_type for alert in alerts}, {'assessment_recovery'}
+        )
+        self.assertEqual({alert.previous_average for alert in alerts}, {45})
+        self.assertEqual({alert.average for alert in alerts}, {55})
+
+    def test_assessment_at_exactly_fifty_percent_does_not_trigger_low_alert(self):
+        created = _notify_parents_of_assessment_result(
+            self.session, 'S1', 'SUB1', 'SEM1', 'Midterm Exam', None, 50
+        )
+
+        self.assertFalse(created)
+        self.assertEqual(self.session.query(ParentGradeAlert).count(), 0)
 
     def test_improvement_is_logged_when_average_rises_above_threshold(self):
         _notify_parents_of_grade_change(

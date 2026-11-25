@@ -128,6 +128,19 @@ class Parent(Base):
         return Parent
 
 
+class ParentStudent(Base):
+    __tablename__ = 'parent_student'
+
+    parent_id = Column('parent_id', String, ForeignKey('parent.id'), primary_key=True)
+    student_id = Column(
+        'student_id', String, ForeignKey('student.id'), primary_key=True, index=True
+    )
+
+    def __init__(self, parent_id, student_id):
+        self.parent_id = parent_id
+        self.student_id = student_id
+
+
 class CreatAssessment(Base):
 
     __tablename__ = 'createassessment'
@@ -229,12 +242,14 @@ class rank(Base):
     student_id = Column('student_id',String,ForeignKey('student.id'),nullable=False)
     rank = Column('rank',Integer,nullable=False)
     simister = Column('simister',Float,nullable=False)
+    semester_id = Column('semester_id', String, ForeignKey('semester.id'), index=True)
 
-    def __init__(self,ID,student_id,rank,simister):
+    def __init__(self, ID, student_id, rank, simister, semester_id=None):
         self.ID = ID
         self.student_id = student_id
         self.rank = rank
         self.simister = simister
+        self.semester_id = semester_id
 
     def __repr__(self):
         rank = f'({self.ID}-{self.student_id}-{self.rank}-{self.simister})'
@@ -365,6 +380,7 @@ class ParentGradeAlert(Base):
     alert_type = Column('alert_type', String(20), nullable=False)
     average = Column('average', Float, nullable=False)
     previous_average = Column('previous_average', Float)
+    assessment_name = Column('assessment_name', String)
     created_at = Column('created_at', DateTime, nullable=False, default=datetime.now, index=True)
 
 

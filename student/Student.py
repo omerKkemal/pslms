@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from flask_login import login_required
 from sqlalchemy.orm import sessionmaker
 
-from database.modle import Student as StudentModel, Assessment, Sections, thought, Subjects, Resource, rank, Parent, SemesterSubjectAverage
+from database.modle import Student as StudentModel, Assessment, Sections, thought, Subjects, Resource, rank, Parent, ParentStudent, SemesterSubjectAverage
 from database.manage_db import var, engine
 from utility.semester_helpers import get_semesters_and_selected
 
@@ -34,9 +34,6 @@ def dashboard():
         if not student:
             return redirect(url_for('Login.login'))
 
-        # Get Student's rank
-        student_rank = _session.query(rank).filter_by(student_id=student_id).first()
-
         # Get Student's subjects from thought table (by grade & section)
         assigned_thoughts = _session.query(thought).filter_by(
             grade=str(student.grade),
@@ -49,6 +46,13 @@ def dashboard():
         # Get Subject averages
         semesters, current_semester = get_semesters_and_selected(
             _session, request.args.get('semester_id')
+        )
+        student_rank = (
+            _session.query(rank).filter_by(
+                student_id=student_id,
+                semester_id=current_semester.ID
+            ).first()
+            if current_semester else None
         )
         averages = (
             _session.query(SemesterSubjectAverage)
@@ -138,7 +142,13 @@ def grades():
             avg_by_subj[name] = avg.average
 
         # Rank
-        r = _session.query(rank).filter_by(student_id=student_id).first()
+        r = (
+            _session.query(rank).filter_by(
+                student_id=student_id,
+                semester_id=selected_semester.ID
+            ).first()
+            if selected_semester else None
+        )
 
         return render_template(
             'student_grades.html',
@@ -211,7 +221,12 @@ def profile():
                 return render_template('student_profile.html', student=student, error="Current password does not match.", active_page='profile')
 
         # Parent info
-        parents = _session.query(Parent).filter_by(student_id=student_id).all()
+        parents = (
+            _session.query(Parent)
+            .join(ParentStudent, ParentStudent.parent_id == Parent.ID)
+            .filter(ParentStudent.student_id == student_id)
+            .all()
+        )
 
         return render_template(
             'student_profile.html',

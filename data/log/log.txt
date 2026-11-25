@@ -101,3 +101,51 @@ The browser instead transmitted some file names. This was submitted: 'script.js'
 [  2026-03-13 17:55:31.196462  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
 [  2026-03-19 09:10:23.963387  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
 [  2026-03-19 09:11:14.576630  ] : login succsesfully --> [['oixeD', 'admin', 'admin']]
+[  2026-11-25 08:26:02.951190  ] : Admin logged in: admin
+[  2026-11-25 08:27:18.984798  ] : Admin logged in: admin
+[  2026-11-25 08:34:31.448495  ] : Admin logged in: admin
+[  2026-11-25 08:37:37.705709  ] : Admin logged in: admin
+[  2026-11-25 08:39:57.275847  ] : Error in get_parents: (sqlite3.OperationalError) no such column: parent.password
+[SQL: SELECT parent.id AS parent_id, parent.student_id AS parent_student_id, parent.hous_number AS parent_hous_number, parent.fname AS parent_fname, parent.lname AS parent_lname, parent.phone AS parent_phone, parent.email AS parent_email, parent.password AS parent_password 
+FROM parent]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[  2026-11-25 08:39:57.289636  ] : internal_server_error --> (500) By:ID=oixeD name=admin
+[  2026-11-25 08:41:07.660769  ] : Error in get_parents: (sqlite3.OperationalError) no such column: parent.password
+[SQL: SELECT parent.id AS parent_id, parent.student_id AS parent_student_id, parent.hous_number AS parent_hous_number, parent.fname AS parent_fname, parent.lname AS parent_lname, parent.phone AS parent_phone, parent.email AS parent_email, parent.password AS parent_password 
+FROM parent]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[  2026-11-25 08:41:07.674463  ] : internal_server_error --> (500) By:ID=oixeD name=admin
+[  2026-11-25 08:43:01.066782  ] : Admin logged in: admin
+[  2026-11-25 09:04:52.014407  ] : Admin logged in: admin
+[  2026-11-25 09:08:07.648287  ] : Admin logged in: admin
+[  2026-11-25 09:22:20.606088  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 09:23:09.706428  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 09:24:20.362879  ] : Admin logged in: admin
+[  2026-11-25 09:28:23.912318  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 09:28:39.422015  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 09:29:10.536595  ] : Admin logged in: admin
+[  2026-11-25 09:30:40.165169  ] : Parent logged in: omer kemal
+[  2026-11-25 09:37:38.284154  ] : Admin logged in: admin
+[  2026-11-25 09:37:52.401383  ] : Admin logged in: admin
+[  2026-11-25 09:38:35.423753  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 09:39:56.582927  ] : Admin logged in: admin
+[  2026-11-25 09:42:32.056515  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 09:42:50.754226  ] : Admin logged in: admin
+[  2026-11-25 09:43:45.672173  ] : Teacher logged in: mustfa mohammed
+[  2026-11-25 09:44:45.229695  ] : Admin logged in: admin
+[  2026-11-25 10:12:50.984597  ] : Admin logged in: admin
+[  2026-11-25 10:13:35.224845  ] : Teacher logged in: mustfa mohammed
+[  2026-11-25 10:17:53.045753  ] : Admin logged in: admin
+[  2026-11-25 10:18:02.856314  ] : Admin logged in: admin
+[  2026-11-25 10:18:22.667827  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-25 10:19:30.472660  ] : Teacher logged in: mustfa mohammed
+[  2026-11-25 10:19:57.530798  ] : Admin logged in: admin
+[  2026-11-25 10:21:47.438629  ] : Teacher logged in: mustfa mohammed
+[  2026-11-25 10:25:56.085109  ] : Admin logged in: admin
+[  2026-11-25 10:26:24.674292  ] : Student logged in: ali kemal
+[  2026-11-25 10:28:29.554830  ] : Admin logged in: admin
+[  2026-11-25 10:28:51.348301  ] : Parent logged in: omer kemal
+[  2026-11-25 10:30:14.015931  ] : Admin logged in: admin
+[  2026-11-25 10:44:53.679417  ] : Teacher logged in: mustfa mohammed
+[  2026-11-25 10:45:37.413000  ] : Student logged in: ali kemal
+[  2026-11-25 10:49:38.468516  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'

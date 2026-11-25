@@ -18,25 +18,63 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-800">{{ subject_name }}</h1>
         <p class="text-gray-500 text-sm">Grade {{ grade }} - Section {{ section }} | Access Level: <span class="font-semibold text-gray-700">{{ access_level }}</span></p>
-        <p class="text-gray-500 text-sm mt-1">
-          {% if semester %}Active semester: <strong>{{ semester.name }}</strong>{% else %}No active semester. An administrator must set the semester dates before grades can be entered.{% endif %}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <a href="/teacher/calculate_ranks/{{ grade }}/{{ section }}" 
-           onclick="return confirm('Recalculate ranks based on total marks for Grade {{ grade }}{{ section }}?');"
-           class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition">
-          Calculate Ranks
-        </a>
+        {% if semester %}
+          <p class="text-gray-500 text-sm mt-1">Active semester: <strong>{{ semester.name }}</strong></p>
+        {% else %}
+          <div role="alert" class="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <strong>No active semester is configured.</strong>
+            Grade entry and updates are unavailable until an administrator sets the semester dates.
+            Please contact your administrator.
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>
+
+  {% if missing_assessments %}
+    <section class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+      <h2 class="text-lg font-bold text-amber-900 mb-1">Missing assessment grades (NG)</h2>
+      <p class="text-sm text-amber-800 mb-4">These students have no score recorded for an assessment whose deadline has passed.</p>
+      <div class="space-y-4">
+        {% for group in missing_assessments %}
+          <div class="bg-white border border-amber-100 rounded-lg p-4">
+            <h3 class="font-semibold text-gray-900">{{ group.title }} · deadline {{ group.deadline.strftime('%Y-%m-%d %H:%M') }}</h3>
+            <div class="divide-y divide-gray-100 mt-2">
+              {% for s in group.students %}
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2">
+                  <span class="text-sm text-gray-700">{{ s.fname }} {{ s.lname }} ({{ s.ID }})</span>
+                  {% if access_level == 'Read&Write' and semester %}
+                    <form action="{{ url_for('teacher.submit_grades') }}" method="POST" class="flex items-center gap-2">
+                      <input type="hidden" name="student_id" value="{{ s.ID }}">
+                      <input type="hidden" name="subject_id" value="{{ subject_id }}">
+                      <input type="hidden" name="grade" value="{{ grade }}">
+                      <input type="hidden" name="section" value="{{ section }}">
+                      <input type="hidden" name="semester_id" value="{{ semester.ID }}">
+                      <input type="hidden" name="assessment_name" value="{{ group.assessment_name }}">
+                      <label class="sr-only" for="ng-score-{{ group.assessment_type }}-{{ s.ID }}">Score out of {{ group.max_mark }}</label>
+                      <input id="ng-score-{{ group.assessment_type }}-{{ s.ID }}" type="number" step="0.1" min="0" max="{{ group.max_mark }}" name="score" placeholder="Score / {{ group.max_mark }}" required
+                             class="w-36 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-amber-500">
+                      <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1 rounded text-xs">
+                        Record grade
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="text-xs text-gray-500">This assignment is read-only.</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 
   <!-- Students List & Grade Entry -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="p-4 border-b border-gray-100">
       <h2 class="text-lg font-bold text-gray-800">Student Grading Sheet</h2>
-      <p class="text-sm text-gray-500 mt-1">Enter an assessment name directly or choose a saved suggestion. You do not need to create an assessment first.</p>
+      <p class="text-sm text-gray-500 mt-1">Use Update beside a recorded score to edit that specific assessment. To add a score, choose one of your created assessments below.</p>
     </div>
 
     {% if students | length > 0 %}
@@ -47,7 +85,7 @@
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Student Name</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">Recorded Scores</th>
-              {% if semester and access_level != 'ReadOnly' and access_level != 'Forbidden' %}
+              {% if semester and access_level == 'Read&Write' %}
                 <th class="px-4 py-3 text-left font-semibold text-gray-600">Submit New Score</th>
               {% endif %}
             </tr>
@@ -62,41 +100,63 @@
                 <td class="px-4 py-3 text-gray-700">
                   {% set records = student_assessments.get(s.ID, []) %}
                   {% if records | length > 0 %}
-                    <div class="flex flex-wrap gap-2">
+                    <div class="space-y-2">
                       {% for r in records %}
-                        <span class="inline-block bg-green-50 border border-green-200 text-green-800 px-2.5 py-1 rounded-md text-xs font-semibold">
-                          {{ r.AssessmentName }}: {{ r.ScoreMark }}
-                        </span>
+                        <div class="flex flex-wrap items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-2.5 py-1 rounded-md">
+                          <span class="text-xs font-semibold">{{ r.AssessmentName }} · {{ r.ScoreMark }} / {{ assessment_max_marks.get(r.ID, 100) }}</span>
+                          {% if semester and access_level == 'Read&Write' %}
+                            <form action="{{ url_for('teacher.submit_grades') }}" method="POST" class="flex items-center gap-1">
+                              <input type="hidden" name="student_id" value="{{ s.ID }}">
+                              <input type="hidden" name="subject_id" value="{{ subject_id }}">
+                              <input type="hidden" name="grade" value="{{ grade }}">
+                              <input type="hidden" name="section" value="{{ section }}">
+                              <input type="hidden" name="semester_id" value="{{ semester.ID }}">
+                              <input type="hidden" name="assessment_name" value="{{ r.AssessmentName }}">
+                              <label class="sr-only" for="update-score-{{ r.ID }}">Update {{ r.AssessmentName }} score</label>
+                              <input id="update-score-{{ r.ID }}" type="number" step="0.1" min="0"
+                                     max="{{ assessment_max_marks.get(r.ID, 100) }}" name="score"
+                                     value="{{ r.ScoreMark }}" required
+                                     class="w-20 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500">
+                              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-2 py-1 rounded text-xs">
+                                Update
+                              </button>
+                            </form>
+                          {% endif %}
+                        </div>
                       {% endfor %}
                     </div>
                   {% else %}
                     <span class="text-gray-400 text-xs italic">No marks recorded</span>
                   {% endif %}
                 </td>
-                {% if semester and access_level != 'ReadOnly' and access_level != 'Forbidden' %}
+                {% if semester and access_level == 'Read&Write' %}
                   <td class="px-4 py-3 whitespace-nowrap">
-                    <form action="/teacher/grade/submit" method="POST" class="flex items-center space-x-2">
-                      <input type="hidden" name="student_id" value="{{ s.ID }}">
-                      <input type="hidden" name="subject_id" value="{{ subject_id }}">
-                      <input type="hidden" name="grade" value="{{ grade }}">
-                      <input type="hidden" name="section" value="{{ section }}">
+                    {% if created_assessments %}
+                      <form action="{{ url_for('teacher.submit_grades') }}" method="POST" class="flex items-center space-x-2">
+                        <input type="hidden" name="student_id" value="{{ s.ID }}">
+                        <input type="hidden" name="subject_id" value="{{ subject_id }}">
+                        <input type="hidden" name="grade" value="{{ grade }}">
+                        <input type="hidden" name="section" value="{{ section }}">
+                        <input type="hidden" name="semester_id" value="{{ semester.ID }}">
+                        <select name="assessment_name" required
+                                onchange="this.nextElementSibling.max = this.selectedOptions[0].dataset.max || 100"
+                                class="w-40 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-green-500">
+                          <option value="" data-max="100">Choose assessment</option>
+                          {% for ca in created_assessments %}
+                            <option value="{{ ca.Assessment_name }}" data-max="{{ ca.Mark }}">{{ ca.Assessment_name }} (out of {{ ca.Mark }})</option>
+                          {% endfor %}
+                        </select>
 
-                      <input type="text" name="assessment_name" list="assessment-options-{{ loop.index }}"
-                             placeholder="Assessment name" required
-                             class="w-36 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-green-500">
-                      <datalist id="assessment-options-{{ loop.index }}">
-                        {% for ca in created_assessments %}
-                          <option value="{{ ca.Assessment_name }}"></option>
-                        {% endfor %}
-                      </datalist>
+                        <input type="number" step="0.1" min="0" max="100" name="score" placeholder="Score" required
+                               class="w-20 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-green-500">
 
-                      <input type="number" step="0.1" min="0" max="100" name="score" placeholder="Score" required
-                             class="w-20 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-green-500">
-
-                      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1 rounded text-xs transition">
-                        Save
-                      </button>
-                    </form>
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1 rounded text-xs transition">
+                          Save
+                        </button>
+                      </form>
+                    {% else %}
+                      <span class="text-xs text-gray-500">Create an assessment first.</span>
+                    {% endif %}
                   </td>
                 {% endif %}
               </tr>

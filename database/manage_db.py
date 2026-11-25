@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect
 
 from database.modle import (
-    Base, Admin, Subjects, ParentGradeAlert, Semester,
+    Base, Admin, Subjects, ParentStudent, ParentGradeAlert, Semester,
     SemesterSubjectAverage, SemesterGradeReport
 )
 from utility.setting import Setting
@@ -71,6 +71,7 @@ def create_grade_reporting_tables(_engine):
     Base.metadata.create_all(
         _engine,
         tables=[
+            ParentStudent.__table__,
             ParentGradeAlert.__table__,
             Semester.__table__,
             SemesterSubjectAverage.__table__,
@@ -96,6 +97,43 @@ def create_grade_reporting_tables(_engine):
             with _engine.begin() as connection:
                 connection.exec_driver_sql(
                     'ALTER TABLE parent_grade_alert ADD COLUMN semester_id VARCHAR REFERENCES semester (id)'
+                )
+        if 'assessment_name' not in alert_columns:
+            with _engine.begin() as connection:
+                connection.exec_driver_sql(
+                    'ALTER TABLE parent_grade_alert ADD COLUMN assessment_name VARCHAR'
+                )
+
+    if 'parent' in existing_tables:
+        parent_columns = {
+            column['name'] for column in inspect(_engine).get_columns('parent')
+        }
+        if 'password' not in parent_columns:
+            with _engine.begin() as connection:
+                connection.exec_driver_sql(
+                    'ALTER TABLE parent ADD COLUMN password VARCHAR(20)'
+                )
+        with _engine.begin() as connection:
+            connection.exec_driver_sql(
+                'INSERT INTO parent_student (parent_id, student_id) '
+                'SELECT parent.id, parent.student_id FROM parent '
+                'WHERE parent.student_id IS NOT NULL AND NOT EXISTS ('
+                'SELECT 1 FROM parent_student '
+                'WHERE parent_student.parent_id = parent.id '
+                'AND parent_student.student_id = parent.student_id)'
+            )
+
+    if 'rank' in existing_tables:
+        rank_columns = {
+            column['name'] for column in inspect(_engine).get_columns('rank')
+        }
+        if 'semester_id' not in rank_columns:
+            with _engine.begin() as connection:
+                connection.exec_driver_sql(
+                    'ALTER TABLE rank ADD COLUMN semester_id VARCHAR REFERENCES semester (id)'
+                )
+                connection.exec_driver_sql(
+                    'CREATE INDEX IF NOT EXISTS ix_rank_semester_id ON rank (semester_id)'
                 )
 
 

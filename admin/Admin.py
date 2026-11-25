@@ -8,7 +8,7 @@
 #   - GitHub: https://github.com/johndoe                                      #
 # =========================================================================== #
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import request, render_template, Blueprint, url_for, redirect, session, flash
 from flask_login import login_required
@@ -21,10 +21,12 @@ from utility._templates_filters import getlist
 from utility.data_processor import read_from_json,allowed_file
 from database.modle import (
     Student, Teacher, CreatAssessment, Assessment, Sections, thought, Parent,
+    ParentStudent,
     Subjects, Resource, DashboardActivity, AssessmentDeadline, ParentGradeAlert,
-    Semester, SemesterGradeReport, SemesterSubjectAverage
+    Semester, SemesterGradeReport, SemesterSubjectAverage, rank
 )
 from database.manage_db import var, engine
+from utility.semester_helpers import get_semesters_and_selected, is_assessment_type
 
 
 Admin = Blueprint(
@@ -43,14 +45,56 @@ def _record_dashboard_activity(action):
     _session.add(DashboardActivity(action=action, actor=session['username']))
 
 
+def _parse_house_number(value):
+    try:
+        house_number = int(value)
+    except (TypeError, ValueError):
+        return None
+    return house_number if house_number > 0 else None
+
+
+def _get_or_create_parent(
+    fname, lname, house_number, student_id=None, phone='', email=''
+):
+    parent = _session.query(Parent).filter(
+        func.lower(func.trim(Parent.fname)) == fname.strip().lower(),
+        func.lower(func.trim(Parent.lname)) == lname.strip().lower(),
+        Parent.hous_number == house_number
+    ).first()
+    created = parent is None
+
+    if created:
+        parent_id = var.ID()
+        parent = Parent(
+            ID=parent_id,
+            fname=fname.strip(),
+            lname=lname.strip(),
+            student_id=student_id,
+            hous_number=house_number,
+            phone=phone,
+            email=email,
+            password=parent_id + fname.strip()
+        )
+        _session.add(parent)
+        _session.flush()
+    elif student_id and not parent.student_id:
+        parent.student_id = student_id
+
+    linked = False
+    if student_id:
+        link_exists = _session.query(ParentStudent).filter_by(
+            parent_id=parent.ID,
+            student_id=student_id
+        ).first()
+        if not link_exists:
+            _session.add(ParentStudent(parent.ID, student_id))
+            linked = True
+
+    return parent, created, linked
+
+
 def _is_assessment_type(assessment_name, assessment_type):
-    words = ''.join(
-        character if character.isalnum() else ' '
-        for character in (assessment_name or '').casefold()
-    ).split()
-    if assessment_type == 'midterm':
-        return bool({'mid', 'midterm'} & set(words))
-    return bool({'final', 'finals'} & set(words))
+    return is_assessment_type(assessment_name, assessment_type)
 
 
 def _collect_attention_items():
@@ -137,6 +181,128 @@ def _collect_attention_items():
     return attention_items
 
 
+def _collect_system_notices(today=None, now=None):
+    today = today or date.today()
+    now = now or datetime.now()
+    notices = []
+
+    active_semester = _session.query(Semester).filter(
+        Semester.starts_on <= today,
+        Semester.ends_on >= today,
+        Semester.closed_at.is_(None)
+    ).order_by(Semester.starts_on.desc()).first()
+
+    if active_semester:
+        notices.append({
+            'title': 'Active semester',
+            'message': (
+                f'{active_semester.name} is active through '
+                f'{active_semester.ends_on:%B %d, %Y}.'
+            ),
+            'severity': 'info'
+        })
+    else:
+        upcoming_semester = _session.query(Semester).filter(
+            Semester.starts_on > today,
+            Semester.closed_at.is_(None)
+        ).order_by(Semester.starts_on).first()
+        if upcoming_semester:
+            notices.append({
+                'title': 'Upcoming semester',
+                'message': (
+                    f'{upcoming_semester.name} starts '
+                    f'{upcoming_semester.starts_on:%B %d, %Y}. '
+                    'Assessments entered before then will not be assigned to a semester.'
+                ),
+                'severity': (
+                    'warning'
+                    if upcoming_semester.starts_on <= today + timedelta(days=7)
+                    else 'info'
+                )
+            })
+        else:
+            notices.append({
+                'title': 'No active semester',
+                'message': (
+                    'There is no active or upcoming semester. '
+                    'New assessments will not be assigned to a semester.'
+                ),
+                'severity': 'warning'
+            })
+
+    attention_items = _collect_attention_items()
+    missing_grade_groups = [
+        item for item in attention_items if item['kind'] == 'missing_grade'
+    ]
+    if missing_grade_groups:
+        group_count = len(missing_grade_groups)
+        notices.append({
+            'title': 'Grades need attention',
+            'message': (
+                f'{group_count} assigned class and subject group'
+                f'{"s" if group_count != 1 else ""} have students without '
+                'any recorded grades.'
+            ),
+            'severity': 'warning'
+        })
+
+    overdue_groups = {
+        assessment_type: [
+            item for item in attention_items if item['kind'] == assessment_type
+        ]
+        for assessment_type in ('midterm', 'final')
+    }
+    for deadline in _session.query(AssessmentDeadline).order_by(
+        AssessmentDeadline.due_at
+    ):
+        if now < deadline.due_at <= now + timedelta(days=7):
+            notices.append({
+                'title': f'{deadline.assessment_type.title()} deadline approaching',
+                'message': (
+                    f'The configured deadline is '
+                    f'{deadline.due_at:%B %d, %Y at %H:%M}.'
+                ),
+                'severity': 'warning'
+            })
+        elif deadline.due_at <= now and overdue_groups.get(deadline.assessment_type):
+            groups = overdue_groups[deadline.assessment_type]
+            group_count = len(groups)
+            student_count = sum(len(item['students']) for item in groups)
+            notices.append({
+                'title': f'Missing {deadline.assessment_type} grades',
+                'message': (
+                    f'{group_count} class and subject group'
+                    f'{"s" if group_count != 1 else ""} still have '
+                    f'{student_count} student'
+                    f'{"s" if student_count != 1 else ""} without '
+                    f'{deadline.assessment_type} grades.'
+                ),
+                'severity': 'warning'
+            })
+
+    if active_semester:
+        attention_event_count = _session.query(
+            func.count(func.distinct(ParentGradeAlert.event_id))
+        ).filter(
+            ParentGradeAlert.semester_id == active_semester.ID,
+            ParentGradeAlert.alert_type.in_(
+                ('attention', 'assessment_attention')
+            )
+        ).scalar() or 0
+        if attention_event_count:
+            notices.append({
+                'title': 'Parent grade alerts',
+                'message': (
+                    f'{attention_event_count} low-grade alert event'
+                    f'{"s have" if attention_event_count != 1 else " has"} '
+                    f'been recorded for {active_semester.name}.'
+                ),
+                'severity': 'warning'
+            })
+
+    return notices
+
+
 def _publish_semester(_session, semester):
     attention_counts = {
         (student_id, subject_id): count
@@ -147,7 +313,9 @@ def _publish_semester(_session, semester):
         )
         .filter(
             ParentGradeAlert.semester_id == semester.ID,
-            ParentGradeAlert.alert_type == 'attention'
+            ParentGradeAlert.alert_type.in_(
+                ('attention', 'assessment_attention')
+            )
         )
         .group_by(ParentGradeAlert.student_id, ParentGradeAlert.subject_id)
         .all()
@@ -183,6 +351,63 @@ def _publish_semester(_session, semester):
     semester.closed_at = datetime.now()
 
 
+def _calculate_semester_ranks(_session, grade, section, semester_id):
+    scored_students = (
+        _session.query(
+            SemesterSubjectAverage.student_id,
+            func.avg(SemesterSubjectAverage.average)
+        )
+        .join(Student, Student.ID == SemesterSubjectAverage.student_id)
+        .filter(
+            Student.grade == grade,
+            Student.section == section,
+            SemesterSubjectAverage.semester_id == semester_id
+        )
+        .group_by(SemesterSubjectAverage.student_id)
+        .all()
+    )
+    student_ids = [student_id for student_id, _ in scored_students]
+    students = {
+        student.ID: student
+        for student in _session.query(Student).filter(Student.ID.in_(student_ids)).all()
+    } if student_ids else {}
+    ordered_scores = sorted(
+        (
+            (student_id, float(average))
+            for student_id, average in scored_students
+        ),
+        key=lambda item: (
+            -item[1],
+            students[item[0]].fname,
+            students[item[0]].lname,
+            item[0]
+        )
+    )
+
+    previous_average = None
+    current_rank = 0
+    for position, (student_id, average) in enumerate(ordered_scores, start=1):
+        if average != previous_average:
+            current_rank = position
+        student_rank = _session.query(rank).filter_by(
+            student_id=student_id,
+            semester_id=semester_id
+        ).first()
+        if student_rank:
+            student_rank.rank = current_rank
+        else:
+            _session.add(rank(
+                ID=var.ID(),
+                student_id=student_id,
+                rank=current_rank,
+                simister=1.0,
+                semester_id=semester_id
+            ))
+        previous_average = average
+
+    return len(ordered_scores)
+
+
 def publish_expired_semesters():
     _session = Session()
     try:
@@ -211,6 +436,14 @@ def get_parents():
                 parents = _session.query(Parent).all()
                 all_students = _session.query(Student).all()
                 student_map = {s.ID: f"{s.fname} {s.lname}" for s in all_students}
+                linked_students = {}
+                if parents:
+                    for parent_student in _session.query(ParentStudent).filter(
+                        ParentStudent.parent_id.in_([p.ID for p in parents])
+                    ).all():
+                        linked_students.setdefault(
+                            parent_student.parent_id, []
+                        ).append(student_map.get(parent_student.student_id, ''))
                 parent_list = []
                 for p in parents:
                     parent_list.append({
@@ -219,8 +452,10 @@ def get_parents():
                         'lname': p.lname,
                         'email': p.email,
                         'phone': p.phone,
-                        'student_id': p.student_id,
-                        'student_name': student_map.get(p.student_id, '')
+                        'hous_number': p.hous_number,
+                        'student_names': ', '.join(filter(
+                            None, linked_students.get(p.ID, [])
+                        ))
                     })
                 return render_template('get_parents.html', parents=parent_list, all_students=all_students, active_page='get_parents')
             else:
@@ -245,29 +480,98 @@ def add_parent():
             phone = request.form.get('phone', '').strip()
             student_id = request.form.get('student_id', '').strip() or None
 
-            hous_number = request.form.get('hous_number')
-            hous_number = int(hous_number) if hous_number and hous_number.isdigit() else 0
+            house_number = _parse_house_number(request.form.get('hous_number'))
+            if not fname or not lname:
+                flash('Enter the parent first and last name.', 'error')
+                return redirect(url_for('admin.get_parents'))
+            if house_number is None:
+                flash('A positive house number is required.', 'error')
+                return redirect(url_for('admin.get_parents'))
+            if student_id and not _session.query(Student).filter_by(
+                ID=student_id
+            ).first():
+                flash('Choose a valid student.', 'error')
+                return redirect(url_for('admin.get_parents'))
 
-            ID = var.ID()
-            parent = Parent(
-                ID=ID,
-                fname=fname,
-                lname=lname,
+            parent, created, linked = _get_or_create_parent(
+                fname,
+                lname,
+                house_number,
                 student_id=student_id,
-                hous_number=hous_number,
                 phone=phone,
-                email=email,
-                password=ID + fname
+                email=email
             )
-            _session.add(parent)
-            _record_dashboard_activity('Added a parent')
+            if created:
+                _record_dashboard_activity('Added a parent')
+            elif linked:
+                _record_dashboard_activity('Linked existing parent to a student')
             _session.commit()
+            flash(
+                'Parent added successfully.' if created else
+                ('Existing parent linked to the student.' if linked else
+                 'That parent already exists for this house number.'),
+                'success' if created or linked else 'info'
+            )
             return redirect(url_for('admin.get_parents'))
         else:
             return redirect(url_for('event.unauthorized'))
     except Exception as e:
         _session.rollback()
         var.log(f"Error in add_parent: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/panal/update_parent/<parent_id>', methods=['POST'])
+@login_required
+def update_parent(parent_id):
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return redirect(url_for('event.unauthorized'))
+
+        parent = _session.query(Parent).filter_by(ID=parent_id).first()
+        if not parent:
+            flash('Parent not found.', 'error')
+            return redirect(url_for('admin.get_parents'))
+
+        fname = request.form.get('fname', '').strip()
+        lname = request.form.get('lname', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        house_number = _parse_house_number(request.form.get('hous_number'))
+        if not fname or not lname:
+            flash('Enter the parent first and last name.', 'error')
+            return redirect(url_for('admin.get_parents'))
+        if house_number is None:
+            flash('A positive house number is required.', 'error')
+            return redirect(url_for('admin.get_parents'))
+
+        duplicate = _session.query(Parent).filter(
+            Parent.ID != parent.ID,
+            func.lower(func.trim(Parent.fname)) == fname.lower(),
+            func.lower(func.trim(Parent.lname)) == lname.lower(),
+            Parent.hous_number == house_number
+        ).first()
+        if duplicate:
+            flash(
+                'Another parent already has this name and house number.',
+                'error'
+            )
+            return redirect(url_for('admin.get_parents'))
+
+        parent.fname = fname
+        parent.lname = lname
+        parent.email = email
+        parent.phone = phone
+        parent.hous_number = house_number
+        _record_dashboard_activity('Updated a parent')
+        _session.commit()
+        flash('Parent information updated.', 'success')
+        return redirect(url_for('admin.get_parents'))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Error in update_parent: {e}")
         return redirect(url_for('event.internal_server_error'))
     finally:
         _session.close()
@@ -288,6 +592,9 @@ def delete_parent():
 
             p = _session.query(Parent).filter_by(ID=parent_id).first()
             if p:
+                _session.query(ParentStudent).filter_by(
+                    parent_id=p.ID
+                ).delete(synchronize_session=False)
                 _session.delete(p)
                 _record_dashboard_activity('Deleted a parent')
                 _session.commit()
@@ -340,6 +647,7 @@ def dashboard():
             male_count=male_count,
             female_count=female_count,
             recent_activities=recent_activities,
+            system_notices=_collect_system_notices(),
             active_page='dashboard'
         )
     else:
@@ -389,34 +697,393 @@ def semester_reports():
             flash('Semester created. Grades entered within its dates will be reported when it ends.', 'success')
             return redirect(url_for('admin.semester_reports'))
 
-        semesters = _session.query(Semester).order_by(Semester.starts_on.desc()).all()
-        report_rows = (
-            _session.query(SemesterGradeReport, Semester, Student, Subjects)
-            .join(Semester, Semester.ID == SemesterGradeReport.semester_id)
-            .join(Student, Student.ID == SemesterGradeReport.student_id)
-            .join(Subjects, Subjects.ID == SemesterGradeReport.subject_id)
-            .filter(Semester.closed_at.isnot(None))
-            .order_by(Semester.closed_at.desc(), Student.fname, Subjects.subject)
-            .all()
+        semesters = _session.query(Semester).order_by(
+            Semester.starts_on.desc()
+        ).all()
+        _, selected_semester = get_semesters_and_selected(
+            _session, request.args.get('semester_id')
         )
-        reports_by_semester = {}
-        for report, semester, student, subject in report_rows:
-            reports_by_semester.setdefault(semester.ID, []).append({
-                'report': report,
-                'student': student,
-                'subject': subject
-            })
+        grade_options = [
+            grade for (grade,) in _session.query(Student.grade)
+            .filter(Student.grade.isnot(None))
+            .distinct()
+            .order_by(Student.grade)
+            .all()
+        ]
+        try:
+            selected_grade = int(request.args.get('grade', ''))
+        except (TypeError, ValueError):
+            selected_grade = None
+        if selected_grade not in grade_options:
+            selected_grade = None
+
+        section_query = _session.query(Student.section).filter(
+            Student.section.isnot(None)
+        )
+        if selected_grade is not None:
+            section_query = section_query.filter(Student.grade == selected_grade)
+        sections = sorted({section for (section,) in section_query.distinct().all()})
+        selected_section = request.args.get('section', '')
+        if selected_section not in sections:
+            selected_section = ''
+
+        assessment_type = request.args.get('assessment_type', 'all').lower()
+        if assessment_type not in ('all', 'midterm', 'final'):
+            assessment_type = 'all'
+
+        student_query = _session.query(Student)
+        if selected_grade is not None:
+            student_query = student_query.filter(Student.grade == selected_grade)
+        if selected_section:
+            student_query = student_query.filter(Student.section == selected_section)
+        students = student_query.order_by(
+            Student.grade, Student.section, Student.fname, Student.lname
+        ).all()
+
+        student_rows = []
+        if selected_semester:
+            semester_assessments = (
+                _session.query(Assessment, Student)
+                .join(Student, Student.ID == Assessment.student_id)
+                .filter(Assessment.semester_id == selected_semester.ID)
+            )
+            if selected_grade is not None:
+                semester_assessments = semester_assessments.filter(
+                    Student.grade == selected_grade
+                )
+            if selected_section:
+                semester_assessments = semester_assessments.filter(
+                    Student.section == selected_section
+                )
+
+            assessment_counts = {}
+            for assessment, student in semester_assessments.all():
+                if assessment_type != 'all' and not is_assessment_type(
+                    assessment.AssessmentName, assessment_type
+                ):
+                    continue
+                assessment_counts[student.ID] = (
+                    assessment_counts.get(student.ID, 0) + 1
+                )
+
+            averages_by_student = {}
+            average_query = (
+                _session.query(SemesterSubjectAverage, Subjects)
+                .join(Subjects, Subjects.ID == SemesterSubjectAverage.subject_id)
+                .filter(
+                    SemesterSubjectAverage.semester_id == selected_semester.ID
+                )
+            )
+            if students:
+                average_query = average_query.filter(
+                    SemesterSubjectAverage.student_id.in_(
+                        [student.ID for student in students]
+                    )
+                )
+            else:
+                average_query = None
+            if average_query is not None:
+                for average, subject in average_query.all():
+                    averages_by_student.setdefault(average.student_id, []).append(
+                        average.average
+                    )
+
+            rank_by_student = {
+                student_rank.student_id: student_rank.rank
+                for student_rank in _session.query(rank).filter_by(
+                    semester_id=selected_semester.ID
+                ).all()
+            }
+            notice_counts = {
+                student_id: event_count
+                for student_id, event_count in _session.query(
+                    ParentGradeAlert.student_id,
+                    func.count(func.distinct(ParentGradeAlert.event_id))
+                )
+                .filter(
+                    ParentGradeAlert.semester_id == selected_semester.ID
+                )
+                .group_by(ParentGradeAlert.student_id)
+                .all()
+            }
+
+            for student in students:
+                assessment_count = assessment_counts.get(student.ID, 0)
+                if assessment_type != 'all' and assessment_count == 0:
+                    continue
+                subject_averages = averages_by_student.get(student.ID, [])
+                student_rows.append({
+                    'student': student,
+                    'overall_average': (
+                        sum(subject_averages) / len(subject_averages)
+                        if subject_averages else None
+                    ),
+                    'assessment_count': assessment_count,
+                    'rank': rank_by_student.get(student.ID),
+                    'parent_notice_events': notice_counts.get(student.ID, 0)
+                })
 
         return render_template(
             'semester_reports.html',
             semesters=semesters,
-            reports_by_semester=reports_by_semester,
+            selected_semester=selected_semester,
+            grade_options=grade_options,
+            selected_grade=selected_grade,
+            sections=sections,
+            selected_section=selected_section,
+            assessment_type=assessment_type,
+            student_rows=student_rows,
             today=date.today(),
             active_page='semester_reports'
         )
     except Exception as e:
         _session.rollback()
         var.log(f"Semester reports error: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/reports/calculate-ranks', methods=['POST'])
+@login_required
+def calculate_semester_ranks():
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('event.unauthorized'))
+
+    semester_id = request.form.get('semester_id', '')
+    section = request.form.get('section', '').strip()
+    assessment_type = request.form.get('assessment_type', 'all')
+    if assessment_type not in ('all', 'midterm', 'final'):
+        assessment_type = 'all'
+    try:
+        grade = int(request.form.get('grade', ''))
+    except (TypeError, ValueError):
+        flash('Choose a valid grade before calculating ranks.', 'error')
+        return redirect(url_for('admin.semester_reports'))
+
+    semester = _session.query(Semester).filter_by(ID=semester_id).first()
+    if not semester or not section:
+        flash('Choose a semester and section before calculating ranks.', 'error')
+        return redirect(url_for(
+            'admin.semester_reports',
+            semester_id=semester_id,
+            grade=grade
+        ))
+
+    try:
+        ranked_count = _calculate_semester_ranks(
+            _session, grade, section, semester.ID
+        )
+        if not ranked_count:
+            flash('No semester averages are available for this class.', 'error')
+        else:
+            _session.commit()
+            flash(f'Ranks calculated for {ranked_count} students.', 'success')
+        return redirect(url_for(
+            'admin.semester_reports',
+            semester_id=semester.ID,
+            grade=grade,
+            section=section,
+            assessment_type=assessment_type
+        ))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Semester rank calculation error: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/reports/student/<student_id>')
+@login_required
+def student_report_card(student_id):
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('event.unauthorized'))
+
+    try:
+        student = _session.query(Student).filter_by(ID=student_id).first()
+        if not student:
+            flash('Student not found.', 'error')
+            return redirect(url_for('admin.semester_reports'))
+
+        semesters, selected_semester = get_semesters_and_selected(
+            _session, request.args.get('semester_id')
+        )
+        if not selected_semester:
+            flash('Create a semester before viewing a report card.', 'error')
+            return redirect(url_for('admin.semester_reports'))
+
+        assessments = (
+            _session.query(Assessment, Subjects)
+            .join(Subjects, Subjects.ID == Assessment.subject_id)
+            .filter(
+                Assessment.student_id == student.ID,
+                Assessment.semester_id == selected_semester.ID
+            )
+            .order_by(Subjects.subject, Assessment.AssessmentName)
+            .all()
+        )
+        score_rows = []
+        for assessment, subject in assessments:
+            definition = _session.query(CreatAssessment).filter_by(
+                Assessment_of=assessment.teacher_id,
+                Assessment_name=assessment.AssessmentName
+            ).first()
+            max_score = (
+                float(definition.Mark)
+                if definition and definition.Mark and definition.Mark > 0
+                else 100.0
+            )
+            score_rows.append({
+                'assessment': assessment,
+                'subject_name': subject.subject,
+                'max_score': max_score,
+                'percentage': float(assessment.ScoreMark) / max_score * 100,
+                'assessment_type': (
+                    'Midterm'
+                    if is_assessment_type(assessment.AssessmentName, 'midterm')
+                    else (
+                        'Final'
+                        if is_assessment_type(assessment.AssessmentName, 'final')
+                        else 'Other'
+                    )
+                )
+            })
+
+        published_averages = {
+            report.subject_id: report
+            for report in _session.query(SemesterGradeReport).filter_by(
+                student_id=student.ID,
+                semester_id=selected_semester.ID
+            ).all()
+        }
+        subject_averages = (
+            _session.query(SemesterSubjectAverage, Subjects)
+            .join(Subjects, Subjects.ID == SemesterSubjectAverage.subject_id)
+            .filter(
+                SemesterSubjectAverage.student_id == student.ID,
+                SemesterSubjectAverage.semester_id == selected_semester.ID
+            )
+            .order_by(Subjects.subject)
+            .all()
+        )
+        average_rows = []
+        for average, subject in subject_averages:
+            report = published_averages.get(average.subject_id)
+            average_rows.append({
+                'subject_name': subject.subject,
+                'average': report.average if report else average.average,
+                'previous_average': report.previous_average if report else None,
+                'attention_count': report.attention_count if report else None
+            })
+
+        parent_query = (
+            _session.query(Parent)
+            .join(ParentStudent, ParentStudent.parent_id == Parent.ID)
+            .filter(ParentStudent.student_id == student.ID)
+        )
+        direct_parents = parent_query.all()
+        household_numbers = {
+            parent.hous_number for parent in direct_parents
+            if parent.hous_number and parent.hous_number > 0
+        }
+        if household_numbers:
+            parents = _session.query(Parent).filter(
+                Parent.hous_number.in_(household_numbers)
+            ).all()
+        else:
+            parents = direct_parents
+
+        parent_alert_rows = (
+            _session.query(ParentGradeAlert, Subjects, Parent)
+            .join(Subjects, Subjects.ID == ParentGradeAlert.subject_id)
+            .join(Parent, Parent.ID == ParentGradeAlert.parent_id)
+            .filter(
+                ParentGradeAlert.student_id == student.ID,
+                ParentGradeAlert.semester_id == selected_semester.ID
+            )
+            .order_by(
+                ParentGradeAlert.parent_id,
+                ParentGradeAlert.created_at,
+                ParentGradeAlert.ID
+            )
+            .all()
+        )
+        parents_by_id = {parent.ID: parent for parent in parents}
+        alerts_by_parent = {}
+        for alert, subject, parent in parent_alert_rows:
+            parents_by_id[parent.ID] = parent
+            alerts_by_parent.setdefault(alert.parent_id, []).append({
+                'alert': alert,
+                'subject_name': subject.subject
+            })
+
+        parent_notice_history = []
+        for parent in sorted(
+            parents_by_id.values(), key=lambda item: (item.fname, item.lname, item.ID)
+        ):
+            history = alerts_by_parent.get(parent.ID, [])
+            history_rows = []
+            for index, row in enumerate(history):
+                alert = row['alert']
+                improved_event = None
+                if alert.alert_type == 'attention':
+                    improved_event = next(
+                        (
+                            later['alert'] for later in history[index + 1:]
+                            if later['alert'].subject_id == alert.subject_id
+                            and later['alert'].assessment_name is None
+                            and later['alert'].average > alert.average
+                        ),
+                        None
+                    )
+                elif alert.alert_type == 'assessment_attention':
+                    improved_event = next(
+                        (
+                            later['alert'] for later in history[index + 1:]
+                            if later['alert'].subject_id == alert.subject_id
+                            and later['alert'].assessment_name == alert.assessment_name
+                            and later['alert'].alert_type in (
+                                'assessment_attention', 'assessment_recovery'
+                            )
+                            and later['alert'].average > alert.average
+                        ),
+                        None
+                    )
+                history_rows.append({
+                    **row,
+                    'improved_event': improved_event
+                })
+            parent_notice_history.append({
+                'parent': parent,
+                'notice_count': len(history),
+                'history': history_rows
+            })
+
+        student_rank = _session.query(rank).filter_by(
+            student_id=student.ID,
+            semester_id=selected_semester.ID
+        ).first()
+        overall_average = (
+            sum(row['average'] for row in average_rows) / len(average_rows)
+            if average_rows else None
+        )
+
+        return render_template(
+            'student_report_card.html',
+            student=student,
+            semesters=semesters,
+            selected_semester=selected_semester,
+            score_rows=score_rows,
+            average_rows=average_rows,
+            overall_average=overall_average,
+            student_rank=student_rank.rank if student_rank else None,
+            parent_notice_history=parent_notice_history,
+            active_page='semester_reports'
+        )
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Student report card error: {e}")
         return redirect(url_for('event.internal_server_error'))
     finally:
         _session.close()
@@ -521,6 +1188,12 @@ def add_students():
                     Grade = request.form['grade']
                     _gender = request.form["gender"]
                     _Section = request.form['section']
+                    parent_hous_number = _parse_house_number(
+                        request.form.get('parent_hous_number')
+                    )
+                    if parent_hous_number is None:
+                        flash('A positive parent house number is required.', 'error')
+                        return redirect(url_for('admin.admin'))
                     ID = var.ID()
                     exist = _session.query(Sections).filter(
                         Sections.section == _Section.upper(),
@@ -541,28 +1214,23 @@ def add_students():
 
                         _session.add(reg)
 
-                        # Automatically create Parent taking student second name (mname) and last name (lname)
                         parent_phone = request.form.get('parent_phone', '').strip()
                         parent_email = request.form.get('parent_email', '').strip()
-                        parent_hous = request.form.get('parent_hous_number')
-                        parent_hous_number = int(parent_hous) if parent_hous and parent_hous.isdigit() else 0
-
-                        parent_id = var.ID()
-                        parent_obj = Parent(
-                            ID=parent_id,
-                            fname=mname,
-                            lname=lname,
+                        parent, parent_created, _ = _get_or_create_parent(
+                            mname,
+                            lname,
+                            parent_hous_number,
                             student_id=ID,
-                            hous_number=parent_hous_number,
                             phone=parent_phone,
-                            email=parent_email,
-                            password=parent_id + mname
+                            email=parent_email
                         )
-                        _session.add(parent_obj)
 
                         _record_dashboard_activity('Added a student')
                         _session.commit()
-                        print('student and parent were added')
+                        print(
+                            'student and parent were added' if parent_created else
+                            'student added and existing parent linked'
+                        )
                         return redirect(url_for('event.successful'))
                     except Exception as e:
                         _session.rollback()
@@ -596,6 +1264,19 @@ def add_student(grade=None, section=None):
                         mname = request.form['mname']
                         lname = request.form['lname']
                         _gender = request.form["gender"]
+                        parent_hous_number = _parse_house_number(
+                            request.form.get('parent_hous_number')
+                        )
+                        if parent_hous_number is None:
+                            flash(
+                                'A positive parent house number is required.',
+                                'error'
+                            )
+                            return redirect(url_for(
+                                'admin.add_student',
+                                grade=grade,
+                                section=section
+                            ))
                         ID = var.ID()
                         data, _data = read_from_json()
                         gender = data.Permanent.Gender
@@ -607,31 +1288,27 @@ def add_student(grade=None, section=None):
                         try:
                             _session.add(reg)
 
-                            # Automatically create Parent taking student second name (mname) and last name (lname)
                             parent_phone = request.form.get('parent_phone', '').strip()
                             parent_email = request.form.get('parent_email', '').strip()
-                            parent_hous = request.form.get('parent_hous_number')
-                            parent_hous_number = int(parent_hous) if parent_hous and parent_hous.isdigit() else 0
-
-                            parent_id = var.ID()
-                            parent_obj = Parent(
-                                ID=parent_id,
-                                fname=mname,
-                                lname=lname,
+                            parent, parent_created, _ = _get_or_create_parent(
+                                mname,
+                                lname,
+                                parent_hous_number,
                                 student_id=ID,
-                                hous_number=parent_hous_number,
                                 phone=parent_phone,
-                                email=parent_email,
-                                password=parent_id + mname
+                                email=parent_email
                             )
-                            _session.add(parent_obj)
 
                             _record_dashboard_activity('Added a student')
                             _session.commit()
-                            print('student and parent were added')
+                            print(
+                                'student and parent were added' if parent_created else
+                                'student added and existing parent linked'
+                            )
                             _session.close()
                             return redirect(url_for('event.successful'))
                         except Exception as e:
+                            _session.rollback()
                             var.log(f"Error occurred: {e}")
                             return redirect(url_for('event.internal_server_error'))
                     else:

@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from flask_login import login_required
 from sqlalchemy.orm import sessionmaker
 
-from database.modle import Parent as ParentModel, Student, Assessment, Sections, Subjects, Resource, rank, Teacher, ParentGradeAlert, Semester, SemesterSubjectAverage, SemesterGradeReport
+from database.modle import Parent as ParentModel, ParentStudent, Student, Assessment, Sections, Subjects, Resource, rank, Teacher, ParentGradeAlert, Semester, SemesterSubjectAverage, SemesterGradeReport
 from database.manage_db import var, engine
 from utility.semester_helpers import get_semesters_and_selected
 
@@ -23,7 +23,8 @@ Session = sessionmaker(bind=engine)
 def _get_parent_children(_session, parent_record):
     children_query = (
         _session.query(Student)
-        .join(ParentModel, ParentModel.student_id == Student.ID)
+        .join(ParentStudent, ParentStudent.student_id == Student.ID)
+        .join(ParentModel, ParentModel.ID == ParentStudent.parent_id)
     )
 
     if parent_record.hous_number and parent_record.hous_number > 0:
@@ -31,7 +32,9 @@ def _get_parent_children(_session, parent_record):
             ParentModel.hous_number == parent_record.hous_number
         )
     else:
-        children_query = children_query.filter(ParentModel.ID == parent_record.ID)
+        children_query = children_query.filter(
+            ParentStudent.parent_id == parent_record.ID
+        )
 
     return (
         children_query.distinct()
@@ -68,7 +71,13 @@ def dashboard():
         )
         children_data = []
         for child in children:
-            child_rank = _session.query(rank).filter_by(student_id=child.ID).first()
+            child_rank = (
+                _session.query(rank).filter_by(
+                    student_id=child.ID,
+                    semester_id=current_semester.ID
+                ).first()
+                if current_semester else None
+            )
             averages = (
                 _session.query(SemesterSubjectAverage)
                 .filter_by(student_id=child.ID, semester_id=current_semester.ID)
@@ -165,7 +174,13 @@ def grades():
             sname = subj.subject if subj else avg.subject_id
             avg_by_subj[sname] = avg.average
 
-        r = _session.query(rank).filter_by(student_id=student.ID).first()
+        r = (
+            _session.query(rank).filter_by(
+                student_id=student.ID,
+                semester_id=selected_semester.ID
+            ).first()
+            if selected_semester else None
+        )
 
         return render_template(
             'parent_grades.html',
@@ -206,7 +221,7 @@ def alerts():
         )
         attention_counts = {}
         for alert in alerts_list:
-            if alert.alert_type == 'attention':
+            if alert.alert_type in ('attention', 'assessment_attention'):
                 key = (alert.student_id, alert.subject_id, alert.semester_id)
                 attention_counts[key] = attention_counts.get(key, 0) + 1
 

@@ -6,25 +6,38 @@
 <div class="max-w-5xl mx-auto">
   <div class="mb-6">
     <h1 class="text-2xl font-bold text-gray-800">Grade Alerts</h1>
-    <p class="text-sm text-gray-500 mt-1">Alerts are created when a changed grade leaves that semester's subject average below 50%. Improvements are recorded here too.</p>
+    <p class="text-sm text-gray-500 mt-1">Alerts are created when an assessment score is below 50%. Score recoveries and subject-average improvements are recorded here too.</p>
   </div>
 
   <div class="space-y-3">
     {% for row in alert_rows %}
       {% set alert = row.alert %}
-      <article class="rounded-xl border p-5 {{ 'border-amber-200 bg-amber-50' if alert.alert_type == 'attention' else 'border-green-200 bg-green-50' }}">
+      {% set is_attention = alert.alert_type in ('attention', 'assessment_attention') %}
+      <article class="rounded-xl border p-5 {{ 'border-amber-200 bg-amber-50' if is_attention else 'border-green-200 bg-green-50' }}">
         <div class="flex flex-col sm:flex-row sm:justify-between gap-2">
           <div>
-            <h2 class="font-bold {{ 'text-amber-900' if alert.alert_type == 'attention' else 'text-green-900' }}">
-              {{ 'Attention needed' if alert.alert_type == 'attention' else 'Grade improvement' }}: {{ row.subject_name }}
+            <h2 class="font-bold {{ 'text-amber-900' if is_attention else 'text-green-900' }}">
+              {% if alert.alert_type == 'assessment_attention' %}
+                Assessment below 50%: {{ alert.assessment_name }}
+              {% elif alert.alert_type == 'assessment_recovery' %}
+                Assessment recovery: {{ alert.assessment_name }}
+              {% elif alert.alert_type == 'attention' %}
+                Attention needed: {{ row.subject_name }}
+              {% else %}
+                Grade improvement: {{ row.subject_name }}
+              {% endif %}
             </h2>
-            <p class="text-sm text-gray-700 mt-1">{{ row.student_name }} — current average: <strong>{{ alert.average|round|int }}%</strong></p>
+            <p class="text-sm text-gray-700 mt-1">
+              {{ row.student_name }} —
+              {{ 'assessment score' if alert.assessment_name else 'current average' }}:
+              <strong>{{ alert.average|round(1) }}%</strong>
+            </p>
             {% if row.semester_name %}
               <p class="text-sm text-gray-600">Semester: {{ row.semester_name }}</p>
             {% endif %}
             {% if alert.previous_average is not none %}
               <p class="text-sm text-gray-700">
-                Previous average: {{ alert.previous_average|round|int }}%
+                Previous {{ 'assessment score' if alert.assessment_name else 'average' }}: {{ alert.previous_average|round(1) }}%
                 {% if alert.average > alert.previous_average %}
                   (improved by {{ (alert.average - alert.previous_average)|round(1) }} percentage points)
                 {% elif alert.average < alert.previous_average %}
@@ -34,8 +47,10 @@
                 {% endif %}
               </p>
             {% endif %}
-            {% if alert.alert_type == 'attention' %}
-              <p class="text-sm text-amber-800 mt-1">This subject is below the 50% attention threshold. You have received {{ row.attention_count }} attention alert(s) for this subject during this semester.</p>
+            {% if alert.alert_type == 'assessment_attention' %}
+              <p class="text-sm text-amber-800 mt-1">This assessment scored below the 50% threshold. This is attention alert {{ row.attention_count }} for this subject during this semester.</p>
+            {% elif alert.alert_type == 'attention' %}
+              <p class="text-sm text-amber-800 mt-1">This subject average is below the 50% attention threshold. You have received {{ row.attention_count }} attention alert(s) for this subject during this semester.</p>
             {% endif %}
           </div>
           <time class="text-xs text-gray-500 whitespace-nowrap" datetime="{{ alert.created_at.isoformat() }}">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</time>
