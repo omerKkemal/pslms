@@ -422,3 +422,23 @@ class SemesterGradeReport(Base):
     previous_average = Column('previous_average', Float)
     attention_count = Column('attention_count', Integer, nullable=False, default=0)
 
+
+class YearlySubjectGradeReport(Base):
+    __tablename__ = 'yearly_subject_grade_report'
+    __table_args__ = (
+        UniqueConstraint(
+            'year', 'student_id', 'subject_id',
+            name='uq_yearly_student_subject_grade_report'
+        ),
+    )
+
+    ID = Column('id', String, primary_key=True)
+    year = Column('year', Integer, nullable=False, index=True)
+    semester1_id = Column('semester1_id', String, ForeignKey('semester.id'), nullable=False)
+    semester2_id = Column('semester2_id', String, ForeignKey('semester.id'), nullable=False)
+    student_id = Column('student_id', String, ForeignKey('student.id'), nullable=False, index=True)
+    subject_id = Column('subject_id', String, ForeignKey('subjects.id'), nullable=False)
+    semester1_average = Column('semester1_average', Float, nullable=False)
+    semester2_average = Column('semester2_average', Float, nullable=False)
+    annual_average = Column('annual_average', Float, nullable=False)
+

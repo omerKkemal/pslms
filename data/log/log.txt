@@ -149,3 +149,13 @@ FROM parent]
 [  2026-11-25 10:44:53.679417  ] : Teacher logged in: mustfa mohammed
 [  2026-11-25 10:45:37.413000  ] : Student logged in: ali kemal
 [  2026-11-25 10:49:38.468516  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-26 08:55:17.870678  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-26 08:55:41.243368  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-26 08:58:36.954283  ] : Invalid student Excel workbook: Missing required columns: middle_name, gender, grade, section, parent_house_number.
+[  2026-11-26 08:58:43.350543  ] : Invalid student Excel workbook: Missing required columns: middle_name, gender, grade, section, parent_house_number.
+[  2026-11-26 08:59:22.772741  ] : Invalid student Excel workbook: Missing required columns: middle_name, gender, grade, section, parent_house_number.
+[  2026-11-26 08:59:52.053586  ] : Invalid student Excel workbook: File is not a zip file
+[  2026-11-26 09:00:12.979197  ] : Invalid student Excel workbook: File is not a zip file
+[  2026-11-26 09:00:27.260196  ] : Invalid student Excel workbook: File is not a zip file
+[  2026-11-26 09:00:28.005724  ] : Error occurred: 'types.SimpleNamespace' object has no attribute 'grade'
+[  2026-11-26 09:01:36.624435  ] : Admin logged in: admin

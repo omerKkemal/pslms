@@ -7,7 +7,7 @@
   <div class="flex justify-between items-center mb-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-800">My Classes & Subjects</h1>
-      <p class="text-gray-500 text-sm">Select a class to enter grades, view students, or compute semester ranks.</p>
+      <p class="text-gray-500 text-sm">Select a class to enter grades and view students.</p>
     </div>
   </div>
 
@@ -26,15 +26,10 @@
           <h2 class="text-xl font-bold text-gray-800 mb-2">{{ c.subject_name }}</h2>
           <p class="text-gray-500 text-sm mb-4">Enrolled Students: <strong class="text-gray-700">{{ c.student_count }}</strong></p>
 
-          <div class="pt-4 border-t border-gray-100 flex items-center justify-between space-x-2">
+          <div class="pt-4 border-t border-gray-100 flex items-center justify-end">
             <a href="/teacher/class/{{ c.grade }}/{{ c.section }}/{{ c.subject_id }}" 
                class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
               Grade Class
-            </a>
-            <a href="/teacher/calculate_ranks/{{ c.grade }}/{{ c.section }}"
-               onclick="return confirm('Compute overall student ranks for Grade {{ c.grade }}{{ c.section }}?');"
-               class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition" title="Compute Ranks">
-              Calc Ranks
             </a>
           </div>
         </div>

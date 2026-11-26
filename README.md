@@ -57,6 +57,7 @@
 ### Administrator
 - **Dashboard with recent activity and attention items** – So you can pretend you're in control.
 - **Create, view, update, and delete students** – Like Pokémon, but with more paperwork.
+- **Bulk-import students from an Excel workbook** – Download the template; invalid rows cancel the import and duplicate students are skipped.
 - **Reset student passwords** – Because they will forget them. All of them.
 - **Create, view, update, and delete teachers** – They also forget passwords.
 - **Assign and remove teacher subjects** – The political part of school management.
@@ -69,6 +70,7 @@
 - **Filter grade reports by grade, section, semester, and assessment type** – A little less scrolling.
 - **Open and print student report cards** – All assessment scores, averages, ranks, and parent alert history in one place.
 - **Calculate class ranks from semester averages** – Admins only, from the grade reports page.
+- **Calculate and save an annual subject report after Semester 2** – A subject is included when both terms have averages; its annual result is `(Semester 1 + Semester 2) / 2`.
 - **Automatically publish reports after semester end dates** – Like expired milk, but with more data.
 
 ### Teacher
@@ -108,6 +110,7 @@
 - **Reports contain subject averages and attention counts** – Numbers, numbers, numbers.
 - **Report cards include assessment scores and parent alert history** – Including later improvement for the same assessment or subject average in the same semester.
 - **Class ranks are calculated per semester from subject averages** – Started by an administrator from grade reports.
+- **Annual subject reports are available after the year's second semester ends** – Incomplete subject pairs are omitted; annual average is the mean of both semesters.
 - **Expired semesters are published automatically on the next authenticated request** – Magic? No, just code.
 
 ---

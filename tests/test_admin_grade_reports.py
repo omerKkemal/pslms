@@ -8,7 +8,8 @@ from sqlalchemy.orm import sessionmaker
 
 from database.modle import (
     Assessment, Base, CreatAssessment, Parent, ParentGradeAlert, rank,
-    Semester, SemesterSubjectAverage, Student, Subjects, Teacher
+    Semester, SemesterSubjectAverage, Student, Subjects, Teacher,
+    YearlySubjectGradeReport
 )
 
 
@@ -115,6 +116,7 @@ class AdminGradeReportTests(unittest.TestCase):
         self.assertIn(b'Ava Learner', response.data)
         self.assertNotIn(b'Ben Learner', response.data)
         self.assertNotIn(b'Cam Learner', response.data)
+        self.assertIn(b'Calculate ranks for Grade 1 / Section A', response.data)
 
     def test_report_card_includes_all_scores_notice_counts_and_later_improvement(self):
         self._login_as('admin')
@@ -159,6 +161,121 @@ class AdminGradeReportTests(unittest.TestCase):
             ).all()
         }
         self.assertEqual(calculated_ranks, {'S1': 2, 'S3': 1})
+
+    def test_yearly_report_averages_two_terms_and_omits_incomplete_subjects(self):
+        semester1 = Semester(
+            ID='YEAR1',
+            name='Semester 1',
+            starts_on=date(2025, 1, 1),
+            ends_on=date(2025, 5, 31),
+            closed_at=datetime(2025, 6, 1)
+        )
+        semester2 = Semester(
+            ID='YEAR2',
+            name='Semester 2',
+            starts_on=date(2025, 6, 1),
+            ends_on=date(2025, 10, 31),
+            closed_at=datetime(2025, 11, 1)
+        )
+        self.session.add_all([
+            semester1,
+            semester2,
+            SemesterSubjectAverage(
+                ID='YAVG1', semester_id='YEAR1', student_id='S1',
+                subject_id='MATH', average=80
+            ),
+            SemesterSubjectAverage(
+                ID='YAVG2', semester_id='YEAR2', student_id='S1',
+                subject_id='MATH', average=90
+            ),
+            SemesterSubjectAverage(
+                ID='YAVG3', semester_id='YEAR1', student_id='S1',
+                subject_id='SCI', average=70
+            )
+        ])
+        self.session.commit()
+        self._login_as('admin')
+
+        with patch.object(self.application_module, 'publish_expired_semesters'):
+            response = self.client.post(
+                '/admin/reports/calculate-yearly',
+                data={
+                    'year': '2025',
+                    'semester1_id': 'YEAR1',
+                    'semester2_id': 'YEAR2'
+                }
+            )
+
+        self.assertEqual(response.status_code, 302)
+        report_rows = self.session.query(YearlySubjectGradeReport).filter_by(
+            year=2025
+        ).all()
+        self.assertEqual(len(report_rows), 1)
+        self.assertEqual(report_rows[0].subject_id, 'MATH')
+        self.assertEqual(report_rows[0].semester1_average, 80)
+        self.assertEqual(report_rows[0].semester2_average, 90)
+        self.assertEqual(report_rows[0].annual_average, 85)
+
+        self.session.query(SemesterSubjectAverage).filter_by(
+            ID='YAVG2'
+        ).one().average = 92
+        self.session.commit()
+        with patch.object(self.application_module, 'publish_expired_semesters'):
+            self.client.post(
+                '/admin/reports/calculate-yearly',
+                data={
+                    'year': '2025',
+                    'semester1_id': 'YEAR1',
+                    'semester2_id': 'YEAR2'
+                }
+            )
+        self.session.expire_all()
+        refreshed_reports = self.session.query(YearlySubjectGradeReport).filter_by(
+            year=2025
+        ).all()
+        self.assertEqual(len(refreshed_reports), 1)
+        self.assertEqual(refreshed_reports[0].annual_average, 86)
+
+        with patch.object(self.application_module, 'publish_expired_semesters'):
+            report_page = self.client.get('/admin/reports?semester_id=YEAR2')
+        self.assertEqual(report_page.status_code, 200)
+        self.assertIn(b'2025 Annual Grade Report', report_page.data)
+        self.assertIn(b'86.0%', report_page.data)
+
+    def test_yearly_report_calculation_is_admin_only(self):
+        self._login_as('teacher')
+
+        with patch.object(self.application_module, 'publish_expired_semesters'):
+            response = self.client.post(
+                '/admin/reports/calculate-yearly',
+                data={
+                    'year': '2025',
+                    'semester1_id': 'YEAR1',
+                    'semester2_id': 'YEAR2'
+                }
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.session.query(YearlySubjectGradeReport).count(), 0)
+
+    def test_teacher_class_list_has_no_rank_action(self):
+        from database.modle import thought
+
+        self.session.add(thought(
+            'TH-CLASS', 'MATH', 'T1', '1', 'A', 'Read&Write'
+        ))
+        self.session.commit()
+        self._login_as('teacher')
+
+        with patch.object(self.application_module, 'publish_expired_semesters'):
+            response = self.client.get('/teacher/classes')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(b'Calc Ranks', response.data)
+        self.assertNotIn(b'/teacher/calculate_ranks/', response.data)
+        with patch.object(self.application_module, 'publish_expired_semesters'):
+            removed_route = self.client.get('/teacher/calculate_ranks/1/A')
+        self.assertEqual(removed_route.status_code, 404)
 
 
 if __name__ == '__main__':

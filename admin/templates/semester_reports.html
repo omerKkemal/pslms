@@ -130,6 +130,34 @@
           <p class="text-sm text-gray-500">Select a grade and section to calculate ranks for that class.</p>
         {% endif %}
       </div>
+      {% if year_semesters|length >= 2 %}
+        <div class="mb-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="font-semibold text-blue-950">{{ report_year }} annual grade report</h3>
+              <p class="text-sm text-blue-800">
+                Each subject result is the mean of {{ year_semesters[0].name }} and {{ year_semesters[1].name }}.
+                Subjects missing an average in either semester are omitted.
+              </p>
+            </div>
+            {% if semester2_available %}
+              <form action="{{ url_for('admin.calculate_yearly_grade_report') }}" method="post">
+                <input type="hidden" name="year" value="{{ report_year }}">
+                <input type="hidden" name="semester1_id" value="{{ year_semesters[0].ID }}">
+                <input type="hidden" name="semester2_id" value="{{ year_semesters[1].ID }}">
+                <input type="hidden" name="grade" value="{{ selected_grade if selected_grade is not none else '' }}">
+                <input type="hidden" name="section" value="{{ selected_section }}">
+                <input type="hidden" name="assessment_type" value="{{ assessment_type }}">
+                <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded-lg">
+                  Calculate / Update {{ report_year }} Annual Report
+                </button>
+              </form>
+            {% else %}
+              <p class="text-sm font-medium text-blue-900">Available after the second semester ends.</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-100 text-sm">
           <thead class="bg-gray-50 text-gray-600">
@@ -163,6 +191,44 @@
         </table>
       </div>
     </section>
+
+    {% if yearly_report_exists %}
+      <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">{{ report_year }} Annual Grade Report</h2>
+        <p class="text-sm text-gray-500 mb-4">
+          Subject averages are calculated as (Semester 1 + Semester 2) / 2.
+          Only subjects with averages in both semesters are included.
+        </p>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-100 text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+              <tr>
+                <th class="px-4 py-3 text-left font-semibold">Student</th>
+                <th class="px-4 py-3 text-left font-semibold">Class</th>
+                <th class="px-4 py-3 text-left font-semibold">Subject</th>
+                <th class="px-4 py-3 text-right font-semibold">{{ year_semesters[0].name }}</th>
+                <th class="px-4 py-3 text-right font-semibold">{{ year_semesters[1].name }}</th>
+                <th class="px-4 py-3 text-right font-semibold">Annual average</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {% for report, student, subject in yearly_report_rows %}
+                <tr>
+                  <td class="px-4 py-3 font-medium">{{ student.fname }} {{ student.lname }} ({{ student.ID }})</td>
+                  <td class="px-4 py-3">Grade {{ student.grade }} / {{ student.section }}</td>
+                  <td class="px-4 py-3">{{ subject.subject }}</td>
+                  <td class="px-4 py-3 text-right">{{ report.semester1_average|round(1) }}%</td>
+                  <td class="px-4 py-3 text-right">{{ report.semester2_average|round(1) }}%</td>
+                  <td class="px-4 py-3 text-right font-semibold">{{ report.annual_average|round(1) }}%</td>
+                </tr>
+              {% else %}
+                <tr><td class="px-4 py-4 text-gray-500" colspan="6">No annual report results match these grade and section filters.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
   {% else %}
     <p class="bg-white rounded-xl border border-gray-100 p-6 text-gray-500">Create a semester to view grade reports.</p>
   {% endif %}

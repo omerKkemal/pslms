@@ -9,12 +9,20 @@
 # =========================================================================== #
 
 from datetime import date, datetime, timedelta
+from io import BytesIO
+from xml.etree.ElementTree import ParseError
+from zipfile import BadZipFile
 
-from flask import request, render_template, Blueprint, url_for, redirect, session, flash
+from flask import (
+    request, render_template, Blueprint, url_for, redirect, session, flash,
+    send_file
+)
 from flask_login import login_required
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 import os
 
 from utility._templates_filters import getlist
@@ -23,7 +31,8 @@ from database.modle import (
     Student, Teacher, CreatAssessment, Assessment, Sections, thought, Parent,
     ParentStudent,
     Subjects, Resource, DashboardActivity, AssessmentDeadline, ParentGradeAlert,
-    Semester, SemesterGradeReport, SemesterSubjectAverage, rank
+    Semester, SemesterGradeReport, SemesterSubjectAverage,
+    YearlySubjectGradeReport, rank
 )
 from database.manage_db import var, engine
 from utility.semester_helpers import get_semesters_and_selected, is_assessment_type
@@ -39,6 +48,9 @@ Session = sessionmaker(bind=engine)
 _session = Session()
 
 Admin.add_app_template_filter(getlist, 'getList')
+
+MAX_STUDENT_IMPORT_BYTES = 5 * 1024 * 1024
+MAX_STUDENT_IMPORT_ROWS = 1000
 
 
 def _record_dashboard_activity(action):
@@ -91,6 +103,157 @@ def _get_or_create_parent(
             linked = True
 
     return parent, created, linked
+
+
+def _normalize_import_header(value):
+    return '_'.join(
+        str(value or '').strip().lower().replace('-', ' ').split()
+    )
+
+
+def _excel_text(value):
+    if value is None:
+        return ''
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value).strip()
+
+
+def _excel_integer(value, field_name):
+    if isinstance(value, bool):
+        raise ValueError(f'{field_name} must be a whole number.')
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f'{field_name} must be a whole number.') from None
+    if not number.is_integer():
+        raise ValueError(f'{field_name} must be a whole number.')
+    return int(number)
+
+
+def _parse_student_import_rows(
+    worksheet, gender_config, allowed_grades, allowed_sections, existing_keys
+):
+    rows = worksheet.iter_rows(values_only=True)
+    headers = next(rows, None)
+    if not headers:
+        raise ValueError('The worksheet is empty. Add the required column headers.')
+
+    header_indexes = {}
+    for index, value in enumerate(headers):
+        header = _normalize_import_header(value)
+        if header:
+            if header in header_indexes:
+                raise ValueError(f'Duplicate column header: {header}.')
+            header_indexes[header] = index
+
+    aliases = {
+        'first_name': ('first_name', 'fname'),
+        'middle_name': ('middle_name', 'mname'),
+        'last_name': ('last_name', 'lname'),
+        'gender': ('gender',),
+        'grade': ('grade',),
+        'section': ('section',),
+        'parent_house_number': ('parent_house_number', 'house_number'),
+        'parent_phone': ('parent_phone',),
+        'parent_email': ('parent_email',)
+    }
+    columns = {}
+    for field, names in aliases.items():
+        columns[field] = next(
+            (header_indexes[name] for name in names if name in header_indexes),
+            None
+        )
+
+    required_fields = (
+        'first_name', 'middle_name', 'last_name', 'gender', 'grade',
+        'section', 'parent_house_number'
+    )
+    missing_columns = [
+        field for field in required_fields if columns[field] is None
+    ]
+    if missing_columns:
+        raise ValueError(
+            'Missing required columns: ' + ', '.join(missing_columns) + '.'
+        )
+
+    genders = {
+        'male': gender_config['male'],
+        'female': gender_config['female'],
+        str(gender_config['male']).strip().lower(): gender_config['male'],
+        str(gender_config['female']).strip().lower(): gender_config['female']
+    }
+    grade_values = {int(grade) for grade in allowed_grades}
+    section_values = {str(section).strip().upper() for section in allowed_sections}
+    seen_keys = set(existing_keys)
+    parsed_students = []
+    skipped_duplicates = 0
+    row_errors = []
+    processed_rows = 0
+
+    for row_number, values in enumerate(rows, start=2):
+        if not values or all(value is None or not str(value).strip() for value in values):
+            continue
+        processed_rows += 1
+        if processed_rows > MAX_STUDENT_IMPORT_ROWS:
+            raise ValueError(
+                f'Import is limited to {MAX_STUDENT_IMPORT_ROWS} student rows.'
+            )
+
+        def value_for(field):
+            index = columns[field]
+            return values[index] if index is not None and index < len(values) else None
+
+        try:
+            fname = _excel_text(value_for('first_name'))
+            mname = _excel_text(value_for('middle_name'))
+            lname = _excel_text(value_for('last_name'))
+            if not fname or not mname or not lname:
+                raise ValueError('First, middle, and last names are required.')
+
+            gender_text = _excel_text(value_for('gender')).lower()
+            gender = genders.get(gender_text)
+            if gender is None:
+                raise ValueError('Gender must be Male or Female (or M or F).')
+
+            grade = _excel_integer(value_for('grade'), 'Grade')
+            if grade not in grade_values:
+                raise ValueError(f'Grade {grade} is not configured.')
+
+            section = _excel_text(value_for('section')).upper()
+            if section not in section_values:
+                raise ValueError(f'Section {section} is not configured.')
+
+            parent_house_number = _excel_integer(
+                value_for('parent_house_number'), 'Parent house number'
+            )
+            if parent_house_number < 1:
+                raise ValueError('Parent house number must be positive.')
+
+            key = (
+                fname.casefold(), mname.casefold(), lname.casefold(),
+                grade, section
+            )
+            if key in seen_keys:
+                skipped_duplicates += 1
+                continue
+            seen_keys.add(key)
+
+            parsed_students.append({
+                'fname': fname,
+                'mname': mname,
+                'lname': lname,
+                'gender': gender,
+                'grade': grade,
+                'section': section,
+                'parent_house_number': parent_house_number,
+                'parent_phone': _excel_text(value_for('parent_phone')),
+                'parent_email': _excel_text(value_for('parent_email'))
+            })
+        except ValueError as e:
+            row_errors.append(f'Row {row_number}: {e}')
+
+    return parsed_students, skipped_duplicates, row_errors
 
 
 def _is_assessment_type(assessment_name, assessment_type):
@@ -349,6 +512,58 @@ def _publish_semester(_session, semester):
         ))
 
     semester.closed_at = datetime.now()
+
+
+def _get_year_semesters(_session, year):
+    query = _session.query(Semester).filter(
+        Semester.starts_on >= date(year, 1, 1)
+    )
+    if year < date.max.year:
+        query = query.filter(Semester.starts_on < date(year + 1, 1, 1))
+    return query.order_by(Semester.starts_on, Semester.ID).all()
+
+
+def _calculate_yearly_grade_report(_session, year, semester1, semester2):
+    averages_by_student_subject = {}
+    averages = _session.query(SemesterSubjectAverage).filter(
+        SemesterSubjectAverage.semester_id.in_(
+            (semester1.ID, semester2.ID)
+        )
+    ).all()
+    for average in averages:
+        key = (average.student_id, average.subject_id)
+        averages_by_student_subject.setdefault(key, {})[
+            average.semester_id
+        ] = average.average
+
+    report_rows = []
+    for (student_id, subject_id), semester_averages in averages_by_student_subject.items():
+        if semester1.ID not in semester_averages or semester2.ID not in semester_averages:
+            continue
+        semester1_average = float(semester_averages[semester1.ID])
+        semester2_average = float(semester_averages[semester2.ID])
+        report_rows.append(YearlySubjectGradeReport(
+            ID=var.ID(),
+            year=year,
+            semester1_id=semester1.ID,
+            semester2_id=semester2.ID,
+            student_id=student_id,
+            subject_id=subject_id,
+            semester1_average=semester1_average,
+            semester2_average=semester2_average,
+            annual_average=(semester1_average + semester2_average) / 2
+        ))
+
+    if not report_rows:
+        return 0, 0
+
+    _session.query(YearlySubjectGradeReport).filter_by(year=year).delete(
+        synchronize_session=False
+    )
+    _session.add_all(report_rows)
+    return len(report_rows), len({
+        report.student_id for report in report_rows
+    })
 
 
 def _calculate_semester_ranks(_session, grade, section, semester_id):
@@ -703,6 +918,16 @@ def semester_reports():
         _, selected_semester = get_semesters_and_selected(
             _session, request.args.get('semester_id')
         )
+        report_year = selected_semester.starts_on.year if selected_semester else None
+        year_semesters = (
+            _get_year_semesters(_session, report_year)
+            if report_year is not None else []
+        )
+        semester2_available = (
+            len(year_semesters) >= 2
+            and selected_semester.ID == year_semesters[1].ID
+            and date.today() > year_semesters[1].ends_on
+        ) if selected_semester else False
         grade_options = [
             grade for (grade,) in _session.query(Student.grade)
             .filter(Student.grade.isnot(None))
@@ -823,6 +1048,31 @@ def semester_reports():
                     'parent_notice_events': notice_counts.get(student.ID, 0)
                 })
 
+        yearly_report_rows = []
+        yearly_report_exists = False
+        if report_year is not None:
+            yearly_report_exists = _session.query(
+                YearlySubjectGradeReport.ID
+            ).filter_by(year=report_year).first() is not None
+            yearly_report_query = (
+                _session.query(YearlySubjectGradeReport, Student, Subjects)
+                .join(Student, Student.ID == YearlySubjectGradeReport.student_id)
+                .join(Subjects, Subjects.ID == YearlySubjectGradeReport.subject_id)
+                .filter(YearlySubjectGradeReport.year == report_year)
+            )
+            if selected_grade is not None:
+                yearly_report_query = yearly_report_query.filter(
+                    Student.grade == selected_grade
+                )
+            if selected_section:
+                yearly_report_query = yearly_report_query.filter(
+                    Student.section == selected_section
+                )
+            yearly_report_rows = yearly_report_query.order_by(
+                Student.grade, Student.section, Student.fname, Student.lname,
+                Subjects.subject
+            ).all()
+
         return render_template(
             'semester_reports.html',
             semesters=semesters,
@@ -833,12 +1083,92 @@ def semester_reports():
             selected_section=selected_section,
             assessment_type=assessment_type,
             student_rows=student_rows,
+            report_year=report_year,
+            year_semesters=year_semesters,
+            semester2_available=semester2_available,
+            yearly_report_exists=yearly_report_exists,
+            yearly_report_rows=yearly_report_rows,
             today=date.today(),
             active_page='semester_reports'
         )
     except Exception as e:
         _session.rollback()
         var.log(f"Semester reports error: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        _session.close()
+
+
+@Admin.route('/admin/reports/calculate-yearly', methods=['POST'])
+@login_required
+def calculate_yearly_grade_report():
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('event.unauthorized'))
+
+    try:
+        year = int(request.form.get('year', ''))
+    except (TypeError, ValueError):
+        flash('Choose a valid report year.', 'error')
+        return redirect(url_for('admin.semester_reports'))
+    if not 1 <= year <= date.max.year:
+        flash('Choose a valid report year.', 'error')
+        return redirect(url_for('admin.semester_reports'))
+
+    semester1_id = request.form.get('semester1_id', '')
+    semester2_id = request.form.get('semester2_id', '')
+    try:
+        year_semesters = _get_year_semesters(_session, year)
+        if (
+            len(year_semesters) < 2
+            or year_semesters[0].ID != semester1_id
+            or year_semesters[1].ID != semester2_id
+        ):
+            flash(
+                'The annual report requires the first two semesters '
+                'configured for the same calendar year.',
+                'error'
+            )
+            return redirect(url_for('admin.semester_reports'))
+
+        semester1, semester2 = year_semesters[:2]
+        if date.today() <= semester2.ends_on:
+            flash('The annual report is available after Semester 2 ends.', 'error')
+            return redirect(url_for(
+                'admin.semester_reports',
+                semester_id=semester2.ID
+            ))
+
+        report_count, student_count = _calculate_yearly_grade_report(
+            _session, year, semester1, semester2
+        )
+        if not report_count:
+            flash(
+                'No students have a subject average recorded in both semesters. '
+                'No annual report was created.',
+                'error'
+            )
+            return redirect(url_for(
+                'admin.semester_reports',
+                semester_id=semester2.ID
+            ))
+
+        _session.commit()
+        flash(
+            f'Created the {year} annual report for {student_count} students '
+            f'and {report_count} student-subject results.',
+            'success'
+        )
+        return redirect(url_for(
+            'admin.semester_reports',
+            semester_id=semester2.ID,
+            yearly_report=year,
+            grade=request.form.get('grade', ''),
+            section=request.form.get('section', ''),
+            assessment_type=request.form.get('assessment_type', 'all')
+        ))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Annual grade report calculation error: {e}")
         return redirect(url_for('event.internal_server_error'))
     finally:
         _session.close()
@@ -1126,6 +1456,177 @@ def admin():
             return redirect(url_for('event.unauthorized'))
     else:
         return redirect(url_for('Login.login'))
+
+
+@Admin.route('/admin/panal/students/import-template')
+@login_required
+def student_import_template():
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('event.unauthorized'))
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Students'
+    worksheet.append([
+        'first_name',
+        'middle_name',
+        'last_name',
+        'gender',
+        'grade',
+        'section',
+        'parent_house_number',
+        'parent_phone',
+        'parent_email'
+    ])
+    instructions = workbook.create_sheet('Instructions')
+    instructions.append(['Column', 'Requirement'])
+    instructions.append(['first_name, middle_name, last_name', 'Required'])
+    instructions.append(['gender', 'Required: Male/Female or M/F'])
+    instructions.append(['grade, section', 'Required: Must match configured school values'])
+    instructions.append(['parent_house_number', 'Required: Positive whole number'])
+    instructions.append(['parent_phone, parent_email', 'Optional'])
+
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='students_import_template.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@Admin.route('/admin/panal/students/import', methods=['POST'])
+@login_required
+def import_students_excel():
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('event.unauthorized'))
+
+    upload = request.files.get('students_file')
+    if not upload or not upload.filename:
+        flash('Choose an .xlsx student workbook to upload.', 'error')
+        return redirect(url_for('admin.admin'))
+    filename = secure_filename(upload.filename)
+    if not filename.lower().endswith('.xlsx'):
+        flash('Student imports must be Excel .xlsx files.', 'error')
+        return redirect(url_for('admin.admin'))
+
+    workbook = None
+    try:
+        workbook_bytes = upload.stream.read(MAX_STUDENT_IMPORT_BYTES + 1)
+        if not workbook_bytes:
+            flash('The uploaded workbook is empty.', 'error')
+            return redirect(url_for('admin.admin'))
+        if len(workbook_bytes) > MAX_STUDENT_IMPORT_BYTES:
+            flash('The workbook must be 5 MB or smaller.', 'error')
+            return redirect(url_for('admin.admin'))
+
+        workbook = load_workbook(
+            BytesIO(workbook_bytes), read_only=True, data_only=True
+        )
+        if not workbook.worksheets:
+            flash('The workbook has no worksheets.', 'error')
+            return redirect(url_for('admin.admin'))
+
+        data, _ = read_from_json()
+        existing_students = _session.query(Student).all()
+        existing_keys = {
+            (
+                student.fname.strip().casefold(),
+                student.mname.strip().casefold(),
+                student.lname.strip().casefold(),
+                int(student.grade),
+                student.section.strip().upper()
+            )
+            for student in existing_students
+            if student.grade is not None and student.section
+        }
+        try:
+            students_to_add, skipped_duplicates, row_errors = _parse_student_import_rows(
+                workbook.worksheets[0],
+                data.Permanent.Gender,
+                data.Permanent.grade,
+                data.Permanent.section,
+                existing_keys
+            )
+        except ValueError as e:
+            flash(f'Import cancelled. {e}', 'error')
+            return redirect(url_for('admin.admin'))
+        if row_errors:
+            shown_errors = '; '.join(row_errors[:5])
+            remaining = len(row_errors) - 5
+            if remaining > 0:
+                shown_errors += f'; and {remaining} more row error(s)'
+            flash(f'Import cancelled. {shown_errors}', 'error')
+            return redirect(url_for('admin.admin'))
+        if not students_to_add:
+            flash(
+                f'No new students to import. {skipped_duplicates} duplicate row(s) skipped.',
+                'info'
+            )
+            return redirect(url_for('admin.admin'))
+
+        existing_sections = {
+            (int(section.grade), section.section.strip().upper())
+            for section in _session.query(Sections).all()
+            if section.grade is not None and section.section
+        }
+        for student_data in students_to_add:
+            section_key = (student_data['grade'], student_data['section'])
+            if section_key not in existing_sections:
+                _session.add(Sections(
+                    var.ID(),
+                    student_data['section'],
+                    student_data['grade']
+                ))
+                existing_sections.add(section_key)
+
+            student_id = var.ID()
+            _session.add(Student(
+                student_id,
+                student_data['fname'],
+                student_data['mname'],
+                student_data['lname'],
+                student_data['gender'],
+                student_id + student_data['fname'],
+                student_data['section'],
+                student_data['grade']
+            ))
+            _get_or_create_parent(
+                student_data['mname'],
+                student_data['lname'],
+                student_data['parent_house_number'],
+                student_id=student_id,
+                phone=student_data['parent_phone'],
+                email=student_data['parent_email']
+            )
+
+        _record_dashboard_activity(
+            f'Imported {len(students_to_add)} students from Excel'
+        )
+        _session.commit()
+        flash(
+            f'Imported {len(students_to_add)} student(s). '
+            f'{skipped_duplicates} duplicate row(s) skipped.',
+            'success'
+        )
+        return redirect(url_for('admin.admin'))
+    except (
+        BadZipFile, InvalidFileException, OSError, ParseError, ValueError
+    ) as e:
+        _session.rollback()
+        var.log(f"Invalid student Excel workbook: {e}")
+        flash('Could not read the workbook. Use the provided .xlsx template.', 'error')
+        return redirect(url_for('admin.admin'))
+    except Exception as e:
+        _session.rollback()
+        var.log(f"Student Excel import error: {e}")
+        return redirect(url_for('event.internal_server_error'))
+    finally:
+        if workbook:
+            workbook.close()
+        _session.close()
 
 
 @Admin.route('/admin/panal/assessment-deadlines', methods=['POST'])

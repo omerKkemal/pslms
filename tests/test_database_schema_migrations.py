@@ -71,6 +71,7 @@ class DatabaseSchemaMigrationTests(unittest.TestCase):
                 column['name']
                 for column in inspect(engine).get_columns('parent_grade_alert')
             }
+            tables = set(inspect(engine).get_table_names())
             with engine.connect() as connection:
                 parent = connection.exec_driver_sql(
                     "SELECT id, fname, lname, password FROM parent WHERE id = 'P1'"
@@ -91,6 +92,7 @@ class DatabaseSchemaMigrationTests(unittest.TestCase):
             self.assertEqual(parent_student, ('P1', 'S1'))
             self.assertIn('assessment_name', alert_columns)
             self.assertEqual(old_alert, ('A1', None, None))
+            self.assertIn('yearly_subject_grade_report', tables)
             self.assertIn('semester_id', rank_columns)
             self.assertEqual(old_rank, ('R1', 'S1', 2, None))
         finally:

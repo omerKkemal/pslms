@@ -15,7 +15,7 @@ from sqlalchemy import inspect
 
 from database.modle import (
     Base, Admin, Subjects, ParentStudent, ParentGradeAlert, Semester,
-    SemesterSubjectAverage, SemesterGradeReport
+    SemesterSubjectAverage, SemesterGradeReport, YearlySubjectGradeReport
 )
 from utility.setting import Setting
 
@@ -75,7 +75,8 @@ def create_grade_reporting_tables(_engine):
             ParentGradeAlert.__table__,
             Semester.__table__,
             SemesterSubjectAverage.__table__,
-            SemesterGradeReport.__table__
+            SemesterGradeReport.__table__,
+            YearlySubjectGradeReport.__table__
         ]
     )
     existing_tables = set(inspect(_engine).get_table_names())
